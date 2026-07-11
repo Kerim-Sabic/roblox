@@ -1,50 +1,32 @@
-name: 💡 Suggestion
-description: Suggest a new feature or an enhancement to make Natro Macro better.
-labels: ["suggestion", "needs triage"]
-
+name: Feature request
+description: Suggest a safety, reliability, automation, or UX improvement.
+labels: ["enhancement", "needs triage"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-      
-        Thank you for your suggestion! Use the sections below to submit a suggestion.
-
-        - Make sure you have asked about the suggestion in our [Discord server](https://discord.gg/natromacro).
-        - All suggestions are welcome - we want to implement them!
-        - Natro Macro is maintained by volunteers. Please be patient when waiting for a response.
-        - Remember to include sufficient details and context.
-        - If you have multiple features to suggest, please submit them in separate issues.
-        - We accept pull requests. If you know how to code it - go ahead!
-
   - type: dropdown
+    id: area
     attributes:
-      label: Have you searched the existing suggestions?
-      description: Please search [here](https://github.com/NatroTeam/NatroMacro/issues?q=is%3Aissue%20state%3Aopen%20label%3Asuggestion) to see if a suggestion already exists for the feature you are requesting.
+      label: Area
+      options: [Safety, Reliability, UI and accessibility, Automation, Detection, Extensions, Integrations, Packaging, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the user problem without prescribing implementation details.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include safe defaults, failure behavior, and any compatibility needs.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Project boundaries
       options:
-        - 'No'
-        - 'Yes'
-    validations:
-      required: true
-
-  - type: textarea
-    id: suggestion
-    attributes:
-      label: What is your suggestion?
-      description: Please provide as much info as possible!
-      placeholder: Give us a detailed description of your suggested feature. Focus on *what* this feature does, over *why* you want this feature.
-    validations:
-      required: true
-
-  - type: textarea
-    id: improve
-    attributes:
-      label: How will this improve Natro Macro?
-      description: Where would this feature be used and for what purpose?
-      placeholder: Tell us *why* you want this feature. How will it benefit Natro Macro users?
-    validations:
-      required: true
-
-  - type: input
-    attributes:
-      label: What is your Discord username?
-      description: This is not required, but it would help us contact you and keep you updated about your suggestion.
+        - label: This does not require Roblox injection, memory access, anti-cheat bypass, or arbitrary remote execution.
+          required: true

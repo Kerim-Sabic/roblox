@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">NectarPilot</title>
+  <desc id="desc">A golden honeycomb surrounding a navigation needle</desc>
+  <defs>
+    <linearGradient id="honey" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd76a"/>
+      <stop offset="1" stop-color="#e99412"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#17140f"/>
+  <path d="M256 58 408 146v176L256 410 104 322V146Z" fill="none" stroke="url(#honey)" stroke-width="34"/>
+  <path d="m302 148-44 97-97 44 93 9 9 93 44-97 97-44-93-9Z" fill="url(#honey)" stroke="#fff1b6" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="258" cy="270" r="25" fill="#17140f" stroke="#fff1b6" stroke-width="8"/>
+</svg>

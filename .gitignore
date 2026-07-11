@@ -40,6 +40,28 @@ pids
 # Dependencies
 node_modules
 
+# NectarPilot build output
+/target
+**/.check/
+/dist
+apps/desktop/dist
+apps/desktop/src-tauri/gen
+apps/desktop/src-tauri/binaries/*
+!apps/desktop/src-tauri/binaries/.gitkeep
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+
+# Local NectarPilot runtime data
+/.nectarpilot
+/diagnostics
+/soak-results
+
 # Test output
 lib-cov
 /coverage

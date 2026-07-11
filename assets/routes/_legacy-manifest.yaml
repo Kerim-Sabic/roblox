@@ -1,0 +1,3108 @@
+format_version: 1
+kind: route
+source_directory: paths
+total_files: 91
+safe_dsl_files: 0
+legacy_bridge_files: 91
+entries:
+- legacy_source: paths/gtb-blue.ahk
+  sha256: e0750f67c6646439a02622d7199ba08690cc2aff21a5db783311e5bf25cacb88
+  bytes: 864
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 34
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtb-mountain.ahk
+  sha256: 8a3985d713a1dd8a7db17ca4a260b72b1ba252ec15b4b1c10b8fece0cc013e48
+  bytes: 638
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 30
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtb-red.ahk
+  sha256: e4f73c0ff0794916ddf607f5fddabe62dc6e2ed60285cec7afc08aee0cd0df6b
+  bytes: 1301
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 49
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-antpass.ahk
+  sha256: 0c2dd7666678a76b4d4b0aaadcb78681a422de8111d1ec345567712623b0f6f1
+  bytes: 591
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 21
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-blender.ahk
+  sha256: a16263dd35d66c4605a78e560096135e9fcf1cc1490b1725b1b9d0b025f02d33
+  bytes: 1588
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 47
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-blueberrydis.ahk
+  sha256: 2afafbf65e61753602c390e99815fb5df5f4d474afcf07ce4e7f6b0834332cde
+  bytes: 772
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 28
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-candles.ahk
+  sha256: a345846e63c43addb523a31ffc8b8f2caace0cfe9faee29627d698af27436dd8
+  bytes: 656
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 24
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtc-clock.ahk
+  sha256: 8036f7b6b61df12ccad71146755b5af66df5c060e1b90d47024ddc80a479ee7a
+  bytes: 1028
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 38
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-coconutdis.ahk
+  sha256: 150e2b0f33af16c984d871b45dd7e89590b7417a869ded51853df47ad88fc5e8
+  bytes: 805
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 30
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtc-extrememm.ahk
+  sha256: de7c2c90d703caf7a6ecea018946e20113e7c7c524bb341e93f2aec29802a73a
+  bytes: 887
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 35
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtc-feast.ahk
+  sha256: 4492778932eab61cd082ded0af4211fd63e3eeff3355dbe35de7e070757c32ec
+  bytes: 890
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 36
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-gingerbread.ahk
+  sha256: 1cb031193db0c5badbec2d570a4d6aad55d03db1d2854262d7d7dcca82693fb8
+  bytes: 316
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 13
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-gluedis.ahk
+  sha256: 6cdb8f06db13111c843a68248220f3f551671823561ee5d9311669145a6fccf8
+  bytes: 1341
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 49
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-gummybeacon.ahk
+  sha256: 7f2e747be4db2b2f217cf1092649866c3563d3192471c131fa1e67e53081bc94
+  bytes: 257
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 7
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 11
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-honeydis.ahk
+  sha256: ba042d4f63f262d7f2075c3728cd8055b49c2873eab93598e110df09be90f271
+  bytes: 116
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 4
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-honeylb.ahk
+  sha256: 019f54323cbc569ad1224633446ed22039db4cfb6fb02f04795fbcf24a460b0c
+  bytes: 108
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 4
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-honeystorm.ahk
+  sha256: 1e0bb0ee27dc44b2343899373c6723ecdff8c8ce506ab3d70a2b34191579d872
+  bytes: 669
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 25
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-lidart.ahk
+  sha256: 3d58738fc2a389a791958d2d658944586e5b9448a9340ce62c3f94fb396d375d
+  bytes: 1064
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 42
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-megamm.ahk
+  sha256: c594140ad5168073107d7b3dcb3ea5d62f104648bba4c9900f2584a91ead2511
+  bytes: 1182
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 37
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-nightmm.ahk
+  sha256: 3b61a784d9a5313fada53c5877c5f9f34425d0a8fc08a21a6cd4abab09f9f7c5
+  bytes: 2347
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 78
+    unsafe_capabilities: 2
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-normalmm.ahk
+  sha256: e94d64d59aed81d280ec79b5f3e69b9281c1e317463fcbd6ce895c3c3c545719
+  bytes: 938
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 36
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-rbpdelevel.ahk
+  sha256: c9a8de21a410cff6de41d65b5c1c4ad33a7cd86ac68f33e6ffda1820e375c075
+  bytes: 395
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 12
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-robopass.ahk
+  sha256: 8d3a0d10362d8177c97b03a67a952868ccfeb11cb321b3f2c314a1c904551c10
+  bytes: 1401
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 54
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-royaljellydis.ahk
+  sha256: f3ebb1ebf2d49e837f8cb2ee4c9d4f245ab2f4caa543c59a3c0aa4de72ee3323
+  bytes: 300
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 9
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 11
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 13
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-samovar.ahk
+  sha256: fd402ebfe855dc1318d6f645b08338a26db862e260254da99c057e49945e26cc
+  bytes: 1617
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 59
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-snowmachine.ahk
+  sha256: 05651b6532dd042a762eea5d3ff2b76783a38a94f81b38023d30ac274a554120
+  bytes: 2035
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 78
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-stickerPrinter.ahk
+  sha256: aea1d4025bdf6522c339d743c291a9ea4a5bd32125287649b53b4bc67851b20a
+  bytes: 688
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 31
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-stickerstack.ahk
+  sha256: 6c328fd97da1702a52f38e6b7df8106cf59c5cc76ba99604bd84f647edde0f87
+  bytes: 1583
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 62
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-stockings.ahk
+  sha256: 41bad3087e3f132af9df6deda2731262010b2f358bb848f3cbef044ae77bcf66
+  bytes: 429
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 18
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-strawberrydis.ahk
+  sha256: 81b39f387f40948d93bbb9724ecb8483423fe1b054570609ee32beca68804522
+  bytes: 1337
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 47
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 6
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-treatdis.ahk
+  sha256: 2e0714cf8012f7409a369a97e0b1eb1a216b16116d689fea746d34191d52b50d
+  bytes: 752
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 27
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-WindShrine.ahk
+  sha256: 7bbf18c67262215bbd5f42939b814ac630c5e8c6c128da575f8f7b019c812e6e
+  bytes: 1386
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 48
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtc-wintermm.ahk
+  sha256: 6cd0214fb528bb6fe5769e316ad3ef5d1a95b11c6408776b2e3db237e509a0d2
+  bytes: 1309
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 52
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtc-wreath.ahk
+  sha256: a6433153e04c0704b5903ee54e2790c0a147f51ccda6a2afb7e80585e62b9918
+  bytes: 213
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 9
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-bamboo.ahk
+  sha256: a5ca9386aa12646a2b86804ef2a7220eaff21efad20d776789e20391fe3a34e6
+  bytes: 653
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 17
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-blueflower.ahk
+  sha256: ae1fe0d5133d585afb74a6c6e7c2cb41a27e703dafa0b0317c3ebaecaf85abc9
+  bytes: 458
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 14
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-cactus.ahk
+  sha256: 64c487f8c713a7c9443863c967484f9398ca5de0c1b7e5eedfde195ee88a8e12
+  bytes: 747
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 23
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 11
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+- legacy_source: paths/gtf-clover.ahk
+  sha256: 6cb4c131aa8362666dc71b3763411692eaae03072e1084fd3196f1db69f8072f
+  bytes: 731
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 18
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 11
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+- legacy_source: paths/gtf-coconut.ahk
+  sha256: ff9778458cf0dfdbde2b7bf2371cd6a326253078496c02f8a92032970b641b47
+  bytes: 717
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 27
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtf-dandelion.ahk
+  sha256: a4827da9a9c7eead793c49a51e571f16cc90e820a9f505b649520cc0dc63b069
+  bytes: 95
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 4
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-mountaintop.ahk
+  sha256: d358b6b25a233f4b2d1556b1b313499b1cbde89b7db6ab8cf6a44ff319e304ce
+  bytes: 810
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 26
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-mushroom.ahk
+  sha256: 5fdc6c8530e8dca20730a49e57a3f3a6cd24d3e456c6fe00110250ed2a266896
+  bytes: 97
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 4
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-pepper.ahk
+  sha256: 8a7989909459b93ba24d18e89d6bd7d1741b52c3f4fb5714fda7f499dc8c7e17
+  bytes: 1040
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 41
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtf-pineapple.ahk
+  sha256: f4062af40db4e1c78d0755f557cd04effc21c0b3bb2577fdb2fa1250f5d87a8d
+  bytes: 700
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 22
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-pinetree.ahk
+  sha256: 767b05b2255a3b97afacb7c875cf3292de1bc95177fbb664f0a304065837f362
+  bytes: 723
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 22
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-pumpkin.ahk
+  sha256: 72f94c8132582159449da0bfe8cbf1fbb49ed0ced7dd6e72c1d1a4f1b2866b3a
+  bytes: 783
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 24
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-rose.ahk
+  sha256: 3813a51cec9de85222c7f29a8137d5ec2c9d26c76a165378948a1cc72cf4d6d5
+  bytes: 905
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 28
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 11
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+- legacy_source: paths/gtf-spider.ahk
+  sha256: 92780e21fb52086a1c8fa0f908503c7c692f1cae9b427a1101a2d277b6675fc9
+  bytes: 539
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 14
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-strawberry.ahk
+  sha256: 6b0903892d9f0a92376ddc0d841bd04984252d733c62a9a33267a07070e318d8
+  bytes: 613
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 17
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-stump.ahk
+  sha256: 255a3c1bfa535183e496428bc26b95b99d8ebf61ecdfbaf0ac3bbe66c7c049b9
+  bytes: 882
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 26
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtf-sunflower.ahk
+  sha256: 6b9c42be825d70ad6742781c52efa12f7b1e285a489981bcfad1e1a0a2001199
+  bytes: 144
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 5
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-bamboo.ahk
+  sha256: 3f0dbd91323907da54de8f6c78b790561f9ef31d361fffa62ba207555caa2ce1
+  bytes: 874
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 29
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-blueflower.ahk
+  sha256: 733caaedfea69fcac2428a6bde5304dffd60a702be44b70aec947347e3da2baf
+  bytes: 602
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 22
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-cactus.ahk
+  sha256: 48bcb86d7e183d840a53bdf238f2fe2a4229503a531fedad7a7dd854490cb809
+  bytes: 874
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 29
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-clover.ahk
+  sha256: e2f31f51cea95fe40e575221c39a0bf0b77426f667331a0f2e46fa90f74b201b
+  bytes: 1065
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 32
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-coconut.ahk
+  sha256: 2780c3ed5ce30ed0628d754552be32f3da754b602eb1c33093469a3ca535a86d
+  bytes: 714
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 27
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtp-dandelion.ahk
+  sha256: 1f8396f52bea56be6d7fa1040f56e232a773bd625cfd1dab5b84c8f615a821fb
+  bytes: 179
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 7
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-mountaintop.ahk
+  sha256: 8fdb2c9d92d8288fa6486125ec3bb96c0999bea405ea4c66884d87d3a4286118
+  bytes: 699
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 28
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-mushroom.ahk
+  sha256: 6149ef5dc0f280a019b795325070af4453e1363179728b122974e0810a36ec04
+  bytes: 170
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 6
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-pepper.ahk
+  sha256: 113cd775a600efc90a2602f42deece954d48c8c9237bef07377ca2dc647e1219
+  bytes: 1084
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 44
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+- legacy_source: paths/gtp-pineapple.ahk
+  sha256: ee26de6d22c1a0535651ea5c65a4aac98f235484ee4b0f68a063ea8601b5fe03
+  bytes: 1075
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 30
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 7
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 11
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+- legacy_source: paths/gtp-pinetree.ahk
+  sha256: 03fb70b876d2f61704aa370c009819d4dd4f2718525d5bc27032efa0e17d3f16
+  bytes: 1151
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 37
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-pumpkin.ahk
+  sha256: 2ab786c9c4f83caa2706e46cf10f8efc628e01128174762d0ea59c9239e0ac10
+  bytes: 928
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 31
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-rose.ahk
+  sha256: a211083dcb27d039928cbc0a585da745ba613087be645a960a3d40af9ef550be
+  bytes: 1134
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 39
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-spider.ahk
+  sha256: 5c78cf9f817e0de8d9c648251bf6ed552f9ae7f6c5901c2429829054a8ea83ea
+  bytes: 620
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 20
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-strawberry.ahk
+  sha256: cc989462bbda4724b043a490694c65841d1e27e6b1c8ce1268a3e8aca850b62b
+  bytes: 774
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 23
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-stump.ahk
+  sha256: faa5e13db2cbbc9713bf6c5afc32c929869e46a0e7053a278c6f53301f1c0193
+  bytes: 911
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 28
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: Send accepts only literal w/a/s/d/space down/up tokens
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtp-sunflower.ahk
+  sha256: fa32b31455eb593bfd5a7cfd59fff6d0ea44661668433046525a35175f4bca33
+  bytes: 155
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 7
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtq-black.ahk
+  sha256: df509f34ad2d81fa9bb3c87296fb9d2be525870b76e393b4d7737f30ccb5fc7d
+  bytes: 114
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 5
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtq-brown.ahk
+  sha256: 7cdd263af8ef0fe8d8ec09beec07f747b075619cf6b5bdfd43f43dae5c8deb6e
+  bytes: 580
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 25
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtq-bucko.ahk
+  sha256: 661aa5aba73f1c4b7ecee2f65e71d09265ae365690a8f9b343da621e9f1ab3ef
+  bytes: 973
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 38
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtq-honey.ahk
+  sha256: 742f39899e360e75299c2cb4fa6d62263a45b9aa9ed9e94d4f77f0823ad6f5dc
+  bytes: 1083
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 43
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtq-polar.ahk
+  sha256: ac40e3cf9a3810a1fcc378c086f36a327442c6a077138a1853d2238fbeab89e7
+  bytes: 739
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 29
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/gtq-riley.ahk
+  sha256: 5fb4dc5483f245644fdc6f7e4f534de320bcf82420628b6b703318d0b4cee864
+  bytes: 1108
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 31
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-bamboo.ahk
+  sha256: 5b3a0933ace3bebc4e5fc94fe15efca3e500b56f65edfc36beb3af52984a1129
+  bytes: 713
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 26
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-blueflower.ahk
+  sha256: 9a7099fa92dfbeff34c2a9b0a5620f1670e0609e2e4f1ed9c34661e3a93bf6fa
+  bytes: 562
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 19
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 12
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-cactus.ahk
+  sha256: 3969bd56a78ef6f81d76fb397f4f1afdc04025d8909ba9fee7b7f305a905d03d
+  bytes: 745
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 20
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-clover.ahk
+  sha256: 4f41064b4cb740faa3fcb0d13acb0d7f126df19b56f9d892383fdbb08ac343c0
+  bytes: 602
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 14
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-coconut.ahk
+  sha256: fcd9c27f8844fe7b6f69635dd185147d63a828b6eab9efc6f9804bfdcbb31dbb
+  bytes: 474
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 12
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 4
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 6
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 7
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-dandelion.ahk
+  sha256: 8147f06fbba9cd6a5ca1cbc4b5ddcf82eb5da4cd91015d8722428f4897af41ba
+  bytes: 574
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 7
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-mountaintop.ahk
+  sha256: 8e0cb4b2119f84aff3f3504d9da779bab5df68048b4eb16aa7ba95dc17791d79
+  bytes: 645
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 18
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-mushroom.ahk
+  sha256: a6ae21e8289cb7ecae0abf66ee5add86656f2e670ae0cd2b385e2fe6fa533824
+  bytes: 718
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 14
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-pepper.ahk
+  sha256: 5640c958751ffbb3d69729964c252250d21a6c4c809959e21b18904509f6a328
+  bytes: 518
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 10
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-pineapple.ahk
+  sha256: 8ee8a2eef9d26b203762b8c19eba57e6613357984ad1aac161e98e2c95d51d03
+  bytes: 1370
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 44
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-pinetree.ahk
+  sha256: bcbc3585f905b1d9a1ea912b33a9fbcd547935ba071db11004669a9b5516a7cc
+  bytes: 2166
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 58
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-pumpkin.ahk
+  sha256: 8761cb886c6782b84d1ca8cb4ab4e978b583b073582dcf4f8e875ed866d1b652
+  bytes: 908
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 24
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 9
+    kind: unsupported_syntax
+    message: key down/up sequences require temporal pairing and cannot be partially converted safely
+  - line: 11
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-rose.ahk
+  sha256: 2a04f94a7b7210d2b5a11b80293c6c8c9626504975ebff083a4ad8fb91870a1e
+  bytes: 535
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 14
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-spider.ahk
+  sha256: b70e1a4f92ae7543a76463807ad89983d1c7e10d2145365ee8c631dbd467c8d6
+  bytes: 632
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 15
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-strawberry.ahk
+  sha256: 1be437574ef2984710f130b7143806bb550a516b2d5b371ec17bc61f6aeca245
+  bytes: 1005
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 16
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-stump.ahk
+  sha256: 7a6d733142bbf3a42aeb13a6ea014ffc8e2a30a0730d5fe0c9e5b188d2ac1483
+  bytes: 1416
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 43
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: paths/wf-sunflower.ahk
+  sha256: d22e60febf28244050023e9f5194d38e2f5bd5338629c3aeb9332f54bbab3217
+  bytes: 547
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 9
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge

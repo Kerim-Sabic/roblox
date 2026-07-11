@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NectarPilot",
+  "version": "0.1.0",
+  "identifier": "dev.nectarpilot.desktop",
+  "build": {
+    "beforeDevCommand": "powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/prepare-daemon-sidecar.ps1 -Configuration Debug && pnpm dev:web",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/prepare-daemon-sidecar.ps1 -Configuration Release && pnpm build:web",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "NectarPilot",
+        "width": 1040,
+        "height": 720,
+        "minWidth": 920,
+        "minHeight": 620,
+        "resizable": true,
+        "center": true,
+        "decorations": true,
+        "transparent": false,
+        "visible": true
+      }
+    ],
+    "security": {
+      "capabilities": ["main-capability"],
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [],
+      "pubkey": ""
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "externalBin": ["binaries/nectarpilot-daemon"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "copyright": "Copyright © NectarPilot and Natro Team contributors",
+    "shortDescription": "Safety-first Bee Swarm Simulator automation dashboard",
+    "longDescription": "A GPLv3 screen-and-input automation dashboard rebuilt from Natro Macro.",
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}

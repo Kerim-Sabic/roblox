@@ -1,69 +1,62 @@
-name: 🐞 Bug Report
-description: Report an issue or error message in Natro Macro.
+name: Bug report
+description: Report a reproducible NectarPilot defect using redacted diagnostics.
 labels: ["bug", "needs triage"]
-
 body:
   - type: markdown
     attributes:
       value: |
-      
-        Thank you for reporting a bug! Use the sections below to submit a bug report.
-
-        - Make sure you have asked in our [Discord server](https://discord.gg/natromacro) for support.
-        - All bug reports are welcome - we want to fix them!
-        - Natro Macro is maintained by volunteers. Please be patient when waiting for a response.
-        - Remember to include sufficient details and context.
-        - If you have multiple bugs to report, please submit them in separate issues.
-        - We accept pull requests. If you know how to fix it - go ahead!
-
+        Never paste Discord tokens, webhooks, private-server links, or unredacted screenshots. Export and review the local diagnostics bundle first.
   - type: dropdown
+    id: duplicate
     attributes:
-      label: Have you searched the existing bug reports?
-      description: Please search [here](https://github.com/NatroTeam/NatroMacro/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug) to see if an issue already exists for the bug you encountered.
+      label: Existing issue search
       options:
-        - 'No'
-        - 'Yes'
+        - I searched and found no matching open issue
+        - I found a related issue and will link it below
     validations:
       required: true
-
+  - type: input
+    id: version
+    attributes:
+      label: NectarPilot version
+      placeholder: 0.1.0-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Area
+      options: [Startup, UI, Gathering, Travel, Reconnect, Activities, Combat, Quests, Planters, Boosts, Monitoring, Discord, Extensions, Update, Other]
+    validations:
+      required: true
   - type: textarea
-    id: bug
+    id: observed
     attributes:
       label: What happened?
-      description: Please provide as much info as possible!
-      placeholder: Tell us what you saw! Feel free to attach pictures/videos if it helps.
+      description: Include the visible state, expected state, and whether emergency stop worked.
     validations:
       required: true
-
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: How do you reproduce this? Please provide as much step-by-step detail as possible.
+      label: Reproduction steps
       value: |
         1.
         2.
         3.
     validations:
       required: true
-
   - type: textarea
-    id: expected
+    id: environment
     attributes:
-      label: What would you expect to happen?
-      description: What should have happened after reproducing the steps above?
-      placeholder: Tell us what you expected to see! Feel free to attach pictures/videos if it helps.
+      label: Environment
+      placeholder: Windows version, Roblox client size, display scale, monitor count, profile mode
     validations:
       required: true
-
-  - type: input
+  - type: checkboxes
+    id: diagnostics
     attributes:
-      label: Natro Macro version
-      description: What version of Natro Macro were you using?
-    validations:
-      required: true
-
-  - type: input
-    attributes:
-      label: What is your Discord username?
-      description: This is not required, but it would help us contact you and provide you with more support.
+      label: Privacy check
+      options:
+        - label: I reviewed every attachment and removed secrets and personal information.
+          required: true

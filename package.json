@@ -1,0 +1,20 @@
+{
+  "name": "nectarpilot-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "scripts": {
+    "build": "pnpm --filter @nectarpilot/desktop build",
+    "bundle:unsigned": "pnpm --filter @nectarpilot/desktop bundle:unsigned",
+    "prepare:sidecar": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/prepare-daemon-sidecar.ps1 -Configuration Debug",
+    "check": "pnpm prepare:sidecar && pnpm --filter @nectarpilot/desktop check && cargo check --workspace",
+    "dev": "pnpm --filter @nectarpilot/desktop tauri dev",
+    "format": "pnpm --filter @nectarpilot/desktop format && cargo fmt --all",
+    "lint": "pnpm prepare:sidecar && pnpm --filter @nectarpilot/desktop lint && cargo clippy --workspace --all-targets -- -D warnings",
+    "test": "pnpm prepare:sidecar && pnpm --filter @nectarpilot/desktop test && cargo test --workspace"
+  }
+}

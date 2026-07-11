@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nectarpilot.dev/schemas/soak-result.schema.json",
+  "title": "NectarPilot soak result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "channel",
+    "started_at",
+    "finished_at",
+    "duration_hours",
+    "passed",
+    "unhandled_crashes",
+    "stuck_inputs",
+    "unrelated_process_terminations",
+    "false_roblox_restarts",
+    "forced_recovery_scenarios",
+    "approved_by"
+  ],
+  "properties": {
+    "channel": { "enum": ["beta", "stable"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "duration_hours": { "type": "number", "minimum": 0 },
+    "passed": { "type": "boolean" },
+    "unhandled_crashes": { "type": "integer", "minimum": 0 },
+    "stuck_inputs": { "type": "integer", "minimum": 0 },
+    "unrelated_process_terminations": { "type": "integer", "minimum": 0 },
+    "false_roblox_restarts": { "type": "integer", "minimum": 0 },
+    "forced_recovery_scenarios": { "type": "integer", "minimum": 0 },
+    "severity_1_open": { "type": "integer", "minimum": 0, "default": 0 },
+    "severity_2_open": { "type": "integer", "minimum": 0, "default": 0 },
+    "approved_by": { "type": "string", "minLength": 1 },
+    "notes": { "type": "string" }
+  }
+}

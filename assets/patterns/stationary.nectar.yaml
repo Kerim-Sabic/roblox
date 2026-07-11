@@ -1,0 +1,5 @@
+schema_version: 1
+name: stationary
+steps:
+- type: wait
+  duration_ms: 10000

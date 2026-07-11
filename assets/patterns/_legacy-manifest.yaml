@@ -1,0 +1,400 @@
+format_version: 1
+kind: pattern
+source_directory: patterns
+total_files: 12
+safe_dsl_files: 1
+legacy_bridge_files: 11
+entries:
+- legacy_source: patterns/Auryn.ahk
+  sha256: f2c7b59d168acd1d10074a71b96250e66a5ee10e1794e8d0a6daa8b9d1db5200
+  bytes: 3886
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 103
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 9
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 10
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/CornerXSnake.ahk
+  sha256: 13815282572208731336ff40cda2102465a5f737d6e59778ca919d7400933ea5
+  bytes: 1618
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 49
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Diamonds.ahk
+  sha256: 8fd6bec233f29c369611828319c27a7123010f65b9c8d1b4c13a8353ec959550
+  bytes: 351
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 11
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/e_lol.ahk
+  sha256: 5f3f9d82e63b8725fd16e2ed550d2e4bbb9c4faaf132c19f8c4b91310d74a366
+  bytes: 981
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 33
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Fork.ahk
+  sha256: 3703de1dfa09d4c87ebc46d7c62182a533c8628dfc61f5f57071e06c5808db6c
+  bytes: 911
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 31
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Lines.ahk
+  sha256: 9f325acc4ae42a6f76fac64a1691d578a7707da7a3e733bb78a6849eb140c5ad
+  bytes: 546
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 22
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Slimline.ahk
+  sha256: be4f46744e4a01af7b667fc54e47fb88a3e59bd4b0c532960036b55a50c29cee
+  bytes: 223
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 7
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Snake.ahk
+  sha256: 7d1e1c4ce14411e6a0cd5862602f543e1aee0874c6732f53eaf47c61f560e51c
+  bytes: 546
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 22
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: Walk units require profile calibration and cannot be converted to a timed move safely
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Squares.ahk
+  sha256: 15f73336a29aaf4e1576723c296e3bbe91f18b96fcbdbd26d2d903c36a34e2e4
+  bytes: 317
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 11
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/Stationary.ahk
+  sha256: fdf840b179b5fbd686ce93950da9d24e404023f992a4d7df654a42f34084cec9
+  bytes: 16
+  status: safe_dsl
+  generated_asset: stationary.nectar.yaml
+  requires_explicit_consent: false
+  issue_counts:
+    unsupported_syntax: 0
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples: []
+- legacy_source: patterns/SuperCat.ahk
+  sha256: 40727f1e0f7f04026c81bca4a8ded5378c1b5e75a04ccbcb6736640a0a56c73e
+  bytes: 1378
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 38
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+- legacy_source: patterns/XSnake.ahk
+  sha256: dd5a4db139f4325535efa008d6032cceadc1909cec0808c3d08c57afe093c602
+  bytes: 1435
+  status: legacy_bridge_required
+  generated_asset: null
+  requires_explicit_consent: true
+  issue_counts:
+    unsupported_syntax: 43
+    unsafe_capabilities: 0
+    invalid_values: 0
+  issue_samples:
+  - line: 1
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 2
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 3
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 4
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 5
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 6
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 7
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge
+  - line: 8
+    kind: unsupported_syntax
+    message: dynamic or unrecognized AutoHotkey syntax requires the opt-in legacy bridge

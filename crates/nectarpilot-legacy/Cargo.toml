@@ -1,0 +1,26 @@
+[package]
+name = "nectarpilot-legacy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+hex.workspace = true
+nectarpilot-platform = { path = "../nectarpilot-platform" }
+regex.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+
+[dev-dependencies]
+nectarpilot-core = { path = "../nectarpilot-core" }
+tempfile.workspace = true
+
+[lints]
+workspace = true

@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 🗨 Start a discussion
-    about: Join our Discord server to get support for macro issues!
-    url: https://discord.gg/natromacro
+  - name: Security report
+    url: https://github.com/Kerim-Sabic/roblox/security/advisories/new
+    about: Report vulnerabilities privately. Never post tokens, private-server links, or unredacted diagnostics.

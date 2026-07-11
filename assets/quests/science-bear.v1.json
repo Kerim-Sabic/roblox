@@ -1,0 +1,477 @@
+{
+  "schema_version": 1,
+  "knowledge_version": "2026-07-11-community-wiki-snapshot",
+  "source_url": "https://bee-swarm-simulator.fandom.com/wiki/Quests#Science_Bear",
+  "quests": [
+    {
+      "sequence": 1,
+      "id": "science-preliminary-research",
+      "giver": "science_bear",
+      "name": "Preliminary Research",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 5 },
+        { "type": "pollen", "amount": 20000, "color": "white" },
+        { "type": "pollen", "amount": 10000, "field": "strawberry" },
+        { "type": "pollen", "amount": 10000, "field": "bamboo" }
+      ]
+    },
+    {
+      "sequence": 2,
+      "id": "science-biology-study",
+      "giver": "science_bear",
+      "name": "Biology Study",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 6 },
+        { "type": "pollen", "amount": 30000, "color": "red" },
+        { "type": "pollen", "amount": 20000, "field": "clover" },
+        { "type": "defeat", "mob": "ladybug", "count": 8 },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 8 }
+      ]
+    },
+    {
+      "sequence": 3,
+      "id": "science-proving-the-hypothesis",
+      "giver": "science_bear",
+      "name": "Proving The Hypothesis",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 7 },
+        { "type": "pollen", "amount": 35000, "color": "blue" },
+        { "type": "pollen", "amount": 35000, "field": "pineapple" },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 9 },
+        { "type": "defeat", "mob": "mantis", "count": 3 }
+      ]
+    },
+    {
+      "sequence": 4,
+      "id": "science-bear-botany",
+      "giver": "science_bear",
+      "name": "Bear Botany",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 8 },
+        { "type": "pollen", "amount": 25000, "field": "dandelion" },
+        { "type": "pollen", "amount": 25000, "field": "sunflower" },
+        { "type": "pollen", "amount": 25000, "field": "blue_flower" },
+        { "type": "defeat", "mob": "spider", "count": 2 }
+      ]
+    },
+    {
+      "sequence": 5,
+      "id": "science-kingdom-collection",
+      "giver": "science_bear",
+      "name": "Kingdom Collection",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 9 },
+        { "type": "pollen", "amount": 75000, "field": "bamboo" },
+        { "type": "pollen", "amount": 35000, "field": "mushroom" },
+        { "type": "defeat", "mob": "spider", "count": 2 }
+      ]
+    },
+    {
+      "sequence": 6,
+      "id": "science-defensive-adaptions",
+      "giver": "science_bear",
+      "name": "Defensive Adaptions",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 10 },
+        { "type": "pollen", "amount": 60000, "field": "cactus" },
+        { "type": "pollen", "amount": 60000, "field": "rose" },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 6 },
+        { "type": "defeat", "mob": "scorpion", "count": 4 }
+      ]
+    },
+    {
+      "sequence": 7,
+      "id": "science-benefits-of-technology",
+      "giver": "science_bear",
+      "name": "Benefits Of Technology",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 11 },
+        { "type": "pollen", "amount": 75000, "field": "pumpkin" },
+        { "type": "pollen", "amount": 75000, "field": "pine_tree" },
+        { "type": "defeat", "mob": "mantis", "count": 2 },
+        { "type": "defeat", "mob": "werewolf", "count": 1 }
+      ]
+    },
+    {
+      "sequence": 8,
+      "id": "science-spider-study",
+      "giver": "science_bear",
+      "name": "Spider Study",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 12 },
+        { "type": "pollen", "amount": 120000, "color": "white" },
+        { "type": "defeat", "mob": "spider", "count": 4 }
+      ]
+    },
+    {
+      "sequence": 9,
+      "id": "science-roses-and-weeds",
+      "giver": "science_bear",
+      "name": "Roses And Weeds",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 13 },
+        { "type": "pollen", "amount": 100000, "field": "rose" },
+        { "type": "pollen", "amount": 30000, "field": "dandelion" },
+        { "type": "defeat", "mob": "ladybug", "count": 10 },
+        { "type": "defeat", "mob": "werewolf", "count": 1 }
+      ]
+    },
+    {
+      "sequence": 10,
+      "id": "science-blue-review",
+      "giver": "science_bear",
+      "name": "Blue Review",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 14 },
+        { "type": "pollen", "amount": 115000, "field": "pine_tree" },
+        { "type": "pollen", "amount": 35000, "field": "blue_flower" },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 12 },
+        { "type": "defeat", "mob": "mantis", "count": 8 }
+      ]
+    },
+    {
+      "sequence": 11,
+      "id": "science-ongoing-progress",
+      "giver": "science_bear",
+      "name": "Ongoing Progress",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 15 },
+        { "type": "pollen", "amount": 125000, "color": "white" },
+        { "type": "pollen", "amount": 65000, "field": "strawberry" },
+        { "type": "pollen", "amount": 65000, "field": "cactus" },
+        { "type": "defeat", "mob": "scorpion", "count": 3 },
+        { "type": "defeat", "mob": "spider", "count": 3 }
+      ]
+    },
+    {
+      "sequence": 12,
+      "id": "science-red-blue-duality",
+      "giver": "science_bear",
+      "name": "Red / Blue Duality",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 16 },
+        { "type": "pollen", "amount": 240000, "color": "red" },
+        { "type": "pollen", "amount": 240000, "color": "blue" },
+        { "type": "pollen", "amount": 240000, "field": "clover" },
+        { "type": "token", "token": "red_boost", "amount": 100 },
+        { "type": "token", "token": "blue_boost", "amount": 100 }
+      ]
+    },
+    {
+      "sequence": 13,
+      "id": "science-costs-of-computation",
+      "giver": "science_bear",
+      "name": "Costs Of Computation",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 17 },
+        { "type": "pollen", "amount": 240000, "color": "red" },
+        { "type": "pollen", "amount": 240000, "color": "blue" },
+        { "type": "pollen", "amount": 422000, "field": "pumpkin" },
+        { "type": "pollen", "amount": 244000, "field": "spider" },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 16 },
+        { "type": "defeat", "mob": "scorpion", "count": 8 },
+        { "type": "defeat", "mob": "werewolf", "count": 2 }
+      ]
+    },
+    {
+      "sequence": 14,
+      "id": "science-pollination-practice",
+      "giver": "science_bear",
+      "name": "Pollination Practice",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 18 },
+        { "type": "pollen", "amount": 870000 },
+        { "type": "pollen", "amount": 435000, "field": "pineapple" },
+        { "type": "defeat", "mob": "mantis", "count": 13 }
+      ]
+    },
+    {
+      "sequence": 15,
+      "id": "science-optimizing-abilities",
+      "giver": "science_bear",
+      "name": "Optimizing Abilities",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 19 },
+        { "type": "pollen", "amount": 820020, "color": "blue" },
+        { "type": "pollen", "amount": 720020, "color": "white" },
+        { "type": "pollen", "amount": 320020, "field": "sunflower" },
+        { "type": "token", "token": "haste", "amount": 100 },
+        { "type": "token", "token": "focus", "amount": 100 },
+        { "type": "defeat", "mob": "spider", "count": 3 }
+      ]
+    },
+    {
+      "sequence": 16,
+      "id": "science-ready-for-infrared",
+      "giver": "science_bear",
+      "name": "Ready For Infrared",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 20 },
+        { "type": "pollen", "amount": 1818181, "color": "red" },
+        { "type": "pollen", "amount": 636363, "field": "strawberry" },
+        { "type": "pollen", "amount": 424242, "field": "mushroom" },
+        { "type": "token", "token": "red_boost", "amount": 313 },
+        { "type": "defeat", "mob": "ladybug", "count": 16 },
+        { "type": "defeat", "mob": "scorpion", "count": 10 }
+      ]
+    },
+    {
+      "sequence": 17,
+      "id": "science-breaking-down-badges",
+      "giver": "science_bear",
+      "name": "Breaking Down Badges",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 21 },
+        { "type": "earn_badge", "badge": "sunflower", "count": 1 },
+        { "type": "earn_badge", "badge": "battle", "count": 2 },
+        { "type": "earn_badge", "badge": "bamboo", "count": 2 },
+        { "type": "pollen", "amount": 2525252, "field": "bamboo" },
+        { "type": "token", "token": "blue_boost", "amount": 524 },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 24 }
+      ]
+    },
+    {
+      "sequence": 18,
+      "id": "science-subsidized-agriculture",
+      "giver": "science_bear",
+      "name": "Subsidized Agriculture",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 22 },
+        { "type": "token", "token": "sprout", "amount": 150 },
+        { "type": "token", "token": "strawberry", "amount": 100 },
+        { "type": "token", "token": "pineapple", "amount": 100 }
+      ]
+    },
+    {
+      "sequence": 19,
+      "id": "science-meticulously-crafted",
+      "giver": "science_bear",
+      "name": "Meticulously Crafted",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 23 },
+        { "type": "earn_badge", "badge": "any", "count": 15 },
+        { "type": "craft", "station": "blender", "count": 10 },
+        { "type": "pollen", "amount": 3333333, "field": "pumpkin" },
+        { "type": "pollen", "amount": 3333333, "field": "cactus" }
+      ]
+    },
+    {
+      "sequence": 20,
+      "id": "science-smart-not-hard",
+      "giver": "science_bear",
+      "name": "Smart, Not Hard",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 24 },
+        { "type": "use_machine", "machine": "field_booster", "count": 1 },
+        { "type": "use_machine", "machine": "red_field_booster", "count": 1 },
+        { "type": "use_machine", "machine": "blue_field_booster", "count": 1 },
+        { "type": "craft", "station": "blender", "count": 14 },
+        { "type": "pollen", "amount": 4444444, "color": "white" },
+        { "type": "pollen", "amount": 4444444, "color": "blue" },
+        { "type": "pollen", "amount": 4444444, "color": "red" }
+      ]
+    },
+    {
+      "sequence": 21,
+      "id": "science-limits-of-language",
+      "giver": "science_bear",
+      "name": "Limits of Language",
+      "translator_reward": true,
+      "objectives": [
+        { "type": "discover_bee_types", "count": 25 },
+        { "type": "earn_badge", "badge": "hotshot", "count": 10 },
+        { "type": "token", "token": "token_link", "amount": 250 },
+        { "type": "pollen", "amount": 5000000, "field": "dandelion" },
+        { "type": "craft", "station": "blender", "count": 50 },
+        { "type": "defeat", "mob": "ant", "count": 50 }
+      ]
+    },
+    {
+      "sequence": 22,
+      "id": "science-patterns-and-probability",
+      "giver": "science_bear",
+      "name": "Patterns and Probability",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 26 },
+        { "type": "token", "token": "sparkles", "amount": 77 },
+        { "type": "pollen", "amount": 7777777, "field": "clover" },
+        { "type": "defeat", "mob": "vicious_bee", "count": 7 },
+        { "type": "craft", "station": "blender", "count": 7 },
+        { "type": "use_item", "item": "royal_jelly", "count": 7 }
+      ]
+    },
+    {
+      "sequence": 23,
+      "id": "science-chemical-analysis",
+      "giver": "science_bear",
+      "name": "Chemical Analysis",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 27 },
+        { "type": "goo", "amount": 270000, "color": "white" },
+        { "type": "goo", "amount": 270000, "color": "red" },
+        { "type": "goo", "amount": 270000, "color": "blue" },
+        { "type": "goo", "amount": 270000, "field": "sunflower" },
+        { "type": "pollen", "amount": 2700000, "field": "sunflower" },
+        { "type": "pollen", "amount": 2700000, "field": "blue_flower" },
+        { "type": "craft", "station": "blender", "count": 27 },
+        { "type": "defeat", "mob": "ladybug", "count": 27 }
+      ]
+    },
+    {
+      "sequence": 24,
+      "id": "science-mark-mechanics",
+      "giver": "science_bear",
+      "name": "Mark Mechanics",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 28 },
+        { "type": "token", "token": "mark", "amount": 282 },
+        { "type": "pollen", "amount": 28282828, "field": "pine_tree" },
+        { "type": "pollen", "amount": 2828282, "field": "mushroom" },
+        { "type": "defeat", "mob": "fire_ant", "count": 28 },
+        { "type": "craft", "station": "blender", "count": 28 },
+        { "type": "defeat", "mob": "werewolf", "count": 2 }
+      ]
+    },
+    {
+      "sequence": 25,
+      "id": "science-meditating-on-phenomenon",
+      "giver": "science_bear",
+      "name": "Meditating On Phenomenon",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 29 },
+        { "type": "token", "token": "red_ability", "amount": 2000 },
+        { "type": "token", "token": "blue_ability", "amount": 2000 },
+        { "type": "token", "token": "red_boost", "amount": 200 },
+        { "type": "token", "token": "blue_boost", "amount": 200 },
+        { "type": "pollen", "amount": 2000000, "field": "clover" },
+        { "type": "pollen", "amount": 2000000, "field": "spider" },
+        { "type": "pollen", "amount": 2000000, "field": "bamboo" },
+        { "type": "pollen", "amount": 2000000, "field": "strawberry" },
+        { "type": "pollen", "amount": 2000000, "field": "pineapple" },
+        { "type": "pollen", "amount": 2000000, "field": "pumpkin" },
+        { "type": "pollen", "amount": 2000000, "field": "cactus" },
+        { "type": "pollen", "amount": 2000000, "field": "rose" },
+        { "type": "pollen", "amount": 2000000, "field": "pine_tree" },
+        { "type": "pollen", "amount": 2000000, "field": "mountain_top" },
+        { "type": "pollen", "amount": 20000000, "color": "red" },
+        { "type": "pollen", "amount": 20000000, "color": "blue" },
+        { "type": "craft", "station": "blender", "count": 20 },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 20 },
+        { "type": "defeat", "mob": "ladybug", "count": 20 }
+      ]
+    },
+    {
+      "sequence": 26,
+      "id": "science-beesperanto",
+      "giver": "science_bear",
+      "name": "Beesperanto",
+      "translator_reward": true,
+      "objectives": [
+        { "type": "discover_bee_types", "count": 30 },
+        { "type": "obtain_bee", "bee": "carpenter_bee" },
+        { "type": "token", "token": "sunflower_seed", "amount": 200 },
+        { "type": "token", "token": "pineapple", "amount": 400 },
+        { "type": "pollen", "amount": 40000000, "color": "white" },
+        { "type": "goo", "amount": 800000, "field": "strawberry" },
+        { "type": "goo", "amount": 800000, "field": "bamboo" },
+        { "type": "goo", "amount": 800000, "field": "pineapple" },
+        { "type": "token", "token": "ability", "amount": 16000 },
+        { "type": "use_item", "item": "royal_jelly", "count": 32 },
+        { "type": "craft", "station": "blender", "count": 64 },
+        { "type": "token", "token": "focus", "amount": 1280 }
+      ]
+    },
+    {
+      "sequence": 27,
+      "id": "science-hive-minded-bias",
+      "giver": "science_bear",
+      "name": "Hive Minded Bias",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 31 },
+        { "type": "pollen", "amount": 44444444, "field": "cactus" },
+        { "type": "pollen", "amount": 44444444, "field": "spider" },
+        { "type": "pollen", "amount": 444444, "field": "ant" },
+        { "type": "feed_item", "item": "moon_charm", "count": 44 },
+        { "type": "use_item", "item": "stinger", "count": 4 },
+        { "type": "use_item", "item": "enzyme", "count": 1 },
+        { "type": "use_item", "item": "oil", "count": 1 },
+        { "type": "token", "token": "inspire", "amount": 44 },
+        { "type": "defeat", "mob": "fire_ant", "count": 44 },
+        { "type": "craft", "station": "blender", "count": 44 },
+        { "type": "defeat", "mob": "king_beetle", "count": 1 }
+      ]
+    },
+    {
+      "sequence": 28,
+      "id": "science-mushroom-measurement-monotony",
+      "giver": "science_bear",
+      "name": "Mushroom Measurement Monotony",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 32 },
+        { "type": "pollen", "amount": 150000000, "field": "mushroom" }
+      ]
+    },
+    {
+      "sequence": 29,
+      "id": "science-the-power-of-information",
+      "giver": "science_bear",
+      "name": "The Power Of Information",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 33 },
+        { "type": "pollen", "amount": 330000000, "color": "white" },
+        { "type": "goo", "amount": 11000000 },
+        { "type": "defeat", "mob": "army_ant", "count": 110 },
+        { "type": "token", "token": "bomb", "amount": 5500 },
+        { "type": "token", "token": "token_link", "amount": 3300 },
+        { "type": "token", "token": "mark", "amount": 880 },
+        { "type": "token", "token": "sparkles", "amount": 440 },
+        { "type": "use_machine", "machine": "strawberry_dispenser", "count": 3 },
+        { "type": "use_machine", "machine": "blueberry_dispenser", "count": 3 },
+        { "type": "use_machine", "machine": "glue_dispenser", "count": 1 },
+        { "type": "craft", "station": "blender", "count": 22 },
+        { "type": "defeat", "mob": "vicious_bee", "count": 5 },
+        { "type": "defeat", "mob": "tunnel_bear", "count": 1 }
+      ]
+    },
+    {
+      "sequence": 30,
+      "id": "science-testing-teamwork",
+      "giver": "science_bear",
+      "name": "Testing Teamwork",
+      "objectives": [
+        { "type": "discover_bee_types", "count": 34 },
+        { "type": "goo", "amount": 50000000, "field": "clover" },
+        { "type": "token", "token": "sprout", "amount": 500 },
+        { "type": "token", "token": "stick_bug_defense_totem", "amount": 50 },
+        { "type": "token", "token": "stick_nymph", "amount": 500 },
+        { "type": "token", "token": "festive_gift", "amount": 500 }
+      ]
+    },
+    {
+      "sequence": 31,
+      "id": "science-epistemological-endeavor",
+      "giver": "science_bear",
+      "name": "Epistemological Endeavor",
+      "translator_reward": true,
+      "objectives": [
+        { "type": "discover_bee_types", "count": 35 },
+        { "type": "pollen", "amount": 268435456, "field": "sunflower" },
+        { "type": "pollen", "amount": 268435456, "field": "pineapple" },
+        { "type": "pollen", "amount": 268435456, "field": "pumpkin" },
+        { "type": "token", "token": "honey", "amount": 4096 },
+        { "type": "token", "token": "boost", "amount": 4096 },
+        { "type": "token", "token": "focus", "amount": 4096 },
+        { "type": "token", "token": "melody", "amount": 512 },
+        { "type": "token", "token": "rage", "amount": 512 },
+        { "type": "feed_item", "item": "moon_charm", "count": 101 },
+        { "type": "use_item", "item": "glue", "count": 10 },
+        { "type": "use_item", "item": "blue_extract", "count": 10 },
+        { "type": "use_item", "item": "red_extract", "count": 10 },
+        { "type": "craft", "station": "blender", "count": 101 },
+        { "type": "defeat", "mob": "rhino_beetle", "count": 101 },
+        { "type": "defeat", "mob": "werewolf", "count": 10 },
+        { "type": "defeat", "mob": "tunnel_bear", "count": 1 }
+      ]
+    }
+  ]
+}
