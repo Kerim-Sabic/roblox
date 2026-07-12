@@ -19,8 +19,8 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 chrono.workspace = true
-nectarpilot-contracts = { path = "../../../crates/nectarpilot-contracts" }
-nectarpilot-core = { path = "../../../crates/nectarpilot-core" }
+nectarpilot-contracts = { path = "../../../crates/nectarpilot-contracts", version = "=0.1.0" }
+nectarpilot-core = { path = "../../../crates/nectarpilot-core", version = "=0.1.0" }
 serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2", features = ["tray-icon"] }

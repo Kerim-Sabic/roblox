@@ -10,7 +10,7 @@ rust-version.workspace = true
 [dependencies]
 chrono.workspace = true
 image.workspace = true
-nectarpilot-core = { path = "../nectarpilot-core" }
+nectarpilot-core = { path = "../nectarpilot-core", version = "=0.1.0" }
 regex.workspace = true
 serde.workspace = true
 thiserror.workspace = true
@@ -21,7 +21,7 @@ zeroize.workspace = true
 windows.workspace = true
 
 [dev-dependencies]
-nectarpilot-contracts = { path = "../nectarpilot-contracts" }
+nectarpilot-contracts = { path = "../nectarpilot-contracts", version = "=0.1.0" }
 tempfile.workspace = true
 uuid.workspace = true
 

@@ -9,9 +9,9 @@ rust-version.workspace = true
 
 [dependencies]
 chrono.workspace = true
-nectarpilot-contracts = { path = "../../crates/nectarpilot-contracts" }
-nectarpilot-core = { path = "../../crates/nectarpilot-core" }
-nectarpilot-platform = { path = "../../crates/nectarpilot-platform" }
+nectarpilot-contracts = { path = "../../crates/nectarpilot-contracts", version = "=0.1.0" }
+nectarpilot-core = { path = "../../crates/nectarpilot-core", version = "=0.1.0" }
+nectarpilot-platform = { path = "../../crates/nectarpilot-platform", version = "=0.1.0" }
 serde_json.workspace = true
 tokio.workspace = true
 tracing.workspace = true

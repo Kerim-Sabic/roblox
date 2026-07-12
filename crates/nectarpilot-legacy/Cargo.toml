@@ -9,7 +9,7 @@ rust-version.workspace = true
 
 [dependencies]
 hex.workspace = true
-nectarpilot-platform = { path = "../nectarpilot-platform" }
+nectarpilot-platform = { path = "../nectarpilot-platform", version = "=0.1.0" }
 regex.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
@@ -19,7 +19,7 @@ tokio.workspace = true
 tokio-util.workspace = true
 
 [dev-dependencies]
-nectarpilot-core = { path = "../nectarpilot-core" }
+nectarpilot-core = { path = "../nectarpilot-core", version = "=0.1.0" }
 tempfile.workspace = true
 
 [lints]
