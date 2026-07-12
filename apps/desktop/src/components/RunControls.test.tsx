@@ -4,6 +4,7 @@ import type { NectarActions } from "../hooks/useNectarPilot";
 import { RunControls } from "./RunControls";
 
 const actions: NectarActions = {
+  refreshSession: vi.fn(),
   start: vi.fn(),
   pause: vi.fn(),
   stop: vi.fn(),

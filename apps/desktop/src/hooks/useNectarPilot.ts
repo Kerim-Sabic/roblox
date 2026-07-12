@@ -8,6 +8,7 @@ import type { AutomationSettings, DashboardSnapshot } from "../types/contracts";
 const defaultService = createNectarService();
 
 export interface NectarActions {
+  refreshSession(): Promise<void>;
   start(): Promise<void>;
   pause(): Promise<void>;
   stop(): Promise<void>;
@@ -90,6 +91,19 @@ export function useNectarPilot(
 
   const actions = useMemo<NectarActions>(
     () => ({
+      refreshSession: async () => {
+        setPendingAction("refresh-session");
+        setError(null);
+        try {
+          const nextSnapshot = await service.getSnapshot();
+          activeProfileId.current = nextSnapshot.activeProfileId;
+          setSnapshot(nextSnapshot);
+        } catch (cause) {
+          setError(errorMessage(cause));
+        } finally {
+          setPendingAction(null);
+        }
+      },
       start: () => run("start", (profileId) => service.start(profileId)),
       pause: () => run("pause", (profileId) => service.pause(profileId)),
       stop: () => run("stop", (profileId) => service.stop(profileId)),

@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Gamepad2,
   Hexagon,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -243,6 +244,16 @@ export function OverviewPage({
                 <dd>PID {snapshot.session.pid ?? "—"}</dd>
               </div>
             </dl>
+            <button
+              className="wide-text-button"
+              disabled={pendingAction !== null}
+              onClick={() => void actions.refreshSession()}
+            >
+              <RefreshCw size={14} />
+              {pendingAction === "refresh-session"
+                ? "Checking Roblox…"
+                : "Recheck Roblox"}
+            </button>
             <button
               className="wide-text-button"
               onClick={() => onNavigate("diagnostics")}
