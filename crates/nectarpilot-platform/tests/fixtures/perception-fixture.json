@@ -1,0 +1,11 @@
+{
+  "id": "synthetic-client-150pct-field",
+  "client": { "width": 160, "height": 100 },
+  "template": { "x": 80, "y": 40, "scale": 1.5 },
+  "expected": {
+    "field": "bamboo",
+    "quest_title": "Preliminary Research",
+    "hive_slot": 1,
+    "prompt": "interact"
+  }
+}
