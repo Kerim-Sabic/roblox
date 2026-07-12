@@ -31,6 +31,9 @@ Copy-Item -LiteralPath (Join-Path $root 'START.bat') -Destination $stage
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE.md') -Destination $stage
 Copy-Item -LiteralPath (Join-Path $root 'THIRD_PARTY_NOTICES.md') -Destination $stage
 Copy-Item -LiteralPath (Join-Path $root 'assets') -Destination $stage -Recurse
+Copy-Item -LiteralPath (Join-Path $root 'paths') -Destination $stage -Recurse
+Copy-Item -LiteralPath (Join-Path $root 'patterns') -Destination $stage -Recurse
+Copy-Item -LiteralPath (Join-Path $root 'submacros\AutoHotkey64.exe') -Destination (Join-Path $stage 'AutoHotkey64.exe')
 $complianceFiles = @(
     (Join-Path $root 'dist\nectarpilot.cdx.json'),
     (Join-Path $root 'dist\npm-licenses.json')

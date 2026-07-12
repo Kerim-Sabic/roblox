@@ -10,6 +10,9 @@ use windows::Win32::Foundation::{CloseHandle, FILETIME, HANDLE, HWND, LPARAM, PO
 use windows::Win32::Graphics::Gdi::{
     ClientToScreen, GetMonitorInfoW, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromWindow,
 };
+use windows::Win32::System::Diagnostics::ToolHelp::{
+    CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+};
 use windows::Win32::System::Threading::{
     GetProcessTimes, OpenProcess, PROCESS_NAME_FORMAT, PROCESS_QUERY_LIMITED_INFORMATION,
     PROCESS_TERMINATE, QueryFullProcessImageNameW, TerminateProcess,
@@ -39,6 +42,75 @@ use crate::session::{
 };
 
 pub const EMERGENCY_HOTKEY_ID: i32 = 0x4E50;
+
+/// A read-only candidate discovered by enumerating Windows process metadata and
+/// attaching only to a matching top-level `RobloxPlayerBeta.exe` window. It is
+/// not an adoption: callers must still explicitly choose an exact PID before
+/// any automation backend can be constructed.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DiscoveredRobloxClient {
+    pub pid: ProcessId,
+    pub window: Option<WindowSnapshot>,
+}
+
+/// Lists official Roblox player processes without injecting input, reading
+/// memory, or modifying any process. A process without an attachable window is
+/// returned as a loading/hidden candidate rather than silently ignored.
+pub fn discover_roblox_clients() -> Result<Vec<DiscoveredRobloxClient>, SessionError> {
+    // SAFETY: This creates a read-only process snapshot for the current
+    // machine. The returned handle is closed on every path below.
+    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) }
+        .map_err(|error| SessionError::Platform(error.to_string()))?;
+    let result = enumerate_roblox_processes(snapshot);
+    // SAFETY: `snapshot` is an owned handle returned by
+    // CreateToolhelp32Snapshot and has not been transferred elsewhere.
+    let _ = unsafe { CloseHandle(snapshot) };
+    result
+}
+
+fn enumerate_roblox_processes(
+    snapshot: HANDLE,
+) -> Result<Vec<DiscoveredRobloxClient>, SessionError> {
+    let mut entry = PROCESSENTRY32W {
+        dwSize: u32::try_from(size_of::<PROCESSENTRY32W>()).unwrap_or(u32::MAX),
+        ..PROCESSENTRY32W::default()
+    };
+    // SAFETY: `entry` is an initialized writable PROCESSENTRY32W and snapshot
+    // is a valid Tool Help snapshot handle owned by the caller.
+    unsafe { Process32FirstW(snapshot, &raw mut entry) }
+        .map_err(|error| SessionError::Platform(error.to_string()))?;
+
+    let probe = WindowsSessionProbe;
+    let mut clients = Vec::new();
+    loop {
+        if process_entry_name(&entry).eq_ignore_ascii_case("RobloxPlayerBeta.exe")
+            && let Some(pid) = ProcessId::new(entry.th32ProcessID)
+        {
+            clients.push(DiscoveredRobloxClient {
+                pid,
+                window: probe.find_main_window(pid).ok(),
+            });
+        }
+        entry = PROCESSENTRY32W {
+            dwSize: u32::try_from(size_of::<PROCESSENTRY32W>()).unwrap_or(u32::MAX),
+            ..PROCESSENTRY32W::default()
+        };
+        // SAFETY: as above; ERROR_NO_MORE_FILES is the expected end condition.
+        if unsafe { Process32NextW(snapshot, &raw mut entry) }.is_err() {
+            break;
+        }
+    }
+    Ok(clients)
+}
+
+fn process_entry_name(entry: &PROCESSENTRY32W) -> String {
+    let length = entry
+        .szExeFile
+        .iter()
+        .position(|character| *character == 0)
+        .unwrap_or(entry.szExeFile.len());
+    String::from_utf16_lossy(&entry.szExeFile[..length])
+}
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct WindowsSessionProbe;
@@ -531,4 +603,19 @@ fn query_image_path(handle: &OwnedProcessHandle) -> windows::core::Result<PathBu
     }?;
     buffer.truncate(usize::try_from(length).unwrap_or(buffer.len()));
     Ok(PathBuf::from(String::from_utf16_lossy(&buffer)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PROCESSENTRY32W, process_entry_name};
+
+    #[test]
+    fn process_snapshot_name_stops_at_the_first_nul() {
+        let mut entry = PROCESSENTRY32W::default();
+        let encoded = "RobloxPlayerBeta.exe\0ignored"
+            .encode_utf16()
+            .collect::<Vec<_>>();
+        entry.szExeFile[..encoded.len()].copy_from_slice(&encoded);
+        assert_eq!(process_entry_name(&entry), "RobloxPlayerBeta.exe");
+    }
 }

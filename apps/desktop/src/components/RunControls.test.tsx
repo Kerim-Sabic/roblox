@@ -12,6 +12,7 @@ const actions: NectarActions = {
   saveSettings: vi.fn(),
   completeOnboarding: vi.fn(),
   trustExtension: vi.fn(),
+  runLegacyExtension: vi.fn(),
   setCompactMode: vi.fn(),
 };
 

@@ -1,9 +1,10 @@
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},
+    io::Read,
     path::{Path, PathBuf},
     process::{Child, Command as ProcessCommand, Stdio},
     sync::{
-        Arc, Mutex, RwLock,
+        Arc, Mutex, OnceLock, RwLock,
         atomic::{AtomicBool, Ordering},
     },
     time::Duration,
@@ -17,13 +18,18 @@ use nectarpilot_contracts::{
 use nectarpilot_core::transport::NamedPipeSpec;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::{Mutex as AsyncMutex, oneshot};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 #[cfg(windows)]
-use nectarpilot_core::transport::{CommandSender, connect_named_pipe, daemon_client};
+use nectarpilot_core::transport::{
+    CommandSender, connect_named_pipe, daemon_client, try_connect_named_pipe,
+};
+#[cfg(windows)]
+use nectarpilot_platform::discover_roblox_clients;
 #[cfg(windows)]
 use tokio::{io::WriteHalf, net::windows::named_pipe::NamedPipeClient};
 
@@ -41,6 +47,13 @@ const RECONNECT_DELAYS: [Duration; 7] = [
     Duration::from_secs(5),
 ];
 const MAX_PROJECTED_EVENTS: usize = 100;
+const ROUTE_MANIFEST: &str = include_str!("../../../../assets/routes/_legacy-manifest.yaml");
+const PATTERN_MANIFEST: &str = include_str!("../../../../assets/patterns/_legacy-manifest.yaml");
+const LEGACY_VERSION: &str = "1.1.2";
+const AUTOHOTKEY64_SHA256: &str =
+    "37ff15a23a98f0a658298e21f1873ca896a05208810bf796f90ca212ee07c7b1";
+
+static LEGACY_CATALOG: OnceLock<Result<Vec<LegacyCatalogEntry>, String>> = OnceLock::new();
 
 #[cfg(windows)]
 type PipeCommandSender = CommandSender<WriteHalf<NamedPipeClient>>;
@@ -70,6 +83,97 @@ struct LogProjection {
     level: &'static str,
     component: String,
     message: String,
+}
+
+struct RobloxDiscoveryProjection {
+    session: Value,
+    detail: String,
+    status: &'static str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum LegacyEntryStatus {
+    SafeDsl,
+    LegacyBridgeRequired,
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyManifest {
+    format_version: u16,
+    kind: String,
+    source_directory: String,
+    total_files: usize,
+    safe_dsl_files: usize,
+    legacy_bridge_files: usize,
+    entries: Vec<LegacyManifestEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyManifestEntry {
+    legacy_source: String,
+    sha256: String,
+    bytes: u64,
+    status: LegacyEntryStatus,
+    generated_asset: Option<String>,
+    requires_explicit_consent: bool,
+    issue_counts: LegacyIssueCounts,
+}
+
+#[derive(Debug, Deserialize)]
+struct LegacyIssueCounts {
+    unsupported_syntax: usize,
+    unsafe_capabilities: usize,
+    invalid_values: usize,
+}
+
+#[derive(Debug, Clone)]
+struct LegacyCatalogEntry {
+    id: String,
+    kind: String,
+    source: String,
+    display_name: String,
+    sha256: String,
+    bytes: u64,
+    status: LegacyEntryStatus,
+    generated_asset: Option<String>,
+    unsupported_syntax: usize,
+    unsafe_capabilities: usize,
+    invalid_values: usize,
+}
+
+#[derive(Debug, Clone)]
+struct TrustedAssetLayout {
+    legacy_root: PathBuf,
+    assets_root: Option<PathBuf>,
+    autohotkey: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone)]
+enum AssetVerification {
+    Verified,
+    Unavailable(String),
+}
+
+#[derive(Debug, Clone)]
+struct LegacyAssetInventory {
+    layout: TrustedAssetLayout,
+    entries: HashMap<String, AssetVerification>,
+}
+
+impl LegacyAssetInventory {
+    fn verification(&self, extension_id: &str) -> AssetVerification {
+        self.entries.get(extension_id).cloned().unwrap_or_else(|| {
+            AssetVerification::Unavailable("asset was not inventoried".to_owned())
+        })
+    }
+
+    fn verified_count(&self) -> usize {
+        self.entries
+            .values()
+            .filter(|status| matches!(status, AssetVerification::Verified))
+            .count()
+    }
 }
 
 #[derive(Default)]
@@ -116,10 +220,11 @@ impl Drop for OwnedDaemon {
 /// commands, but it never receives process, pipe, shell, or filesystem handles.
 pub struct DaemonBridge {
     app: AppHandle,
+    legacy_assets: Result<LegacyAssetInventory, String>,
     cache: RwLock<BridgeCache>,
     owned_daemon: Mutex<Option<OwnedDaemon>>,
     pending: AsyncMutex<HashMap<Uuid, oneshot::Sender<Result<(), String>>>>,
-    profile_bootstrap: AsyncMutex<()>,
+    shutdown_ready: AsyncMutex<HashMap<Uuid, oneshot::Sender<()>>>,
     #[cfg(windows)]
     sender: AsyncMutex<Option<PipeCommandSender>>,
     shutdown: CancellationToken,
@@ -128,12 +233,15 @@ pub struct DaemonBridge {
 
 impl DaemonBridge {
     pub fn new(app: AppHandle) -> Arc<Self> {
+        let legacy_assets =
+            legacy_catalog().and_then(|catalog| verify_legacy_assets(&app, catalog));
         Arc::new(Self {
             app,
+            legacy_assets,
             cache: RwLock::new(BridgeCache::default()),
             owned_daemon: Mutex::new(None),
             pending: AsyncMutex::new(HashMap::new()),
-            profile_bootstrap: AsyncMutex::new(()),
+            shutdown_ready: AsyncMutex::new(HashMap::new()),
             #[cfg(windows)]
             sender: AsyncMutex::new(None),
             shutdown: CancellationToken::new(),
@@ -161,14 +269,24 @@ impl DaemonBridge {
         let profile_id = self
             .cached_run()
             .map_or_else(Uuid::nil, |snapshot| snapshot.profile_id);
-        let emergency = CommandEnvelope::new(profile_id, Command::EmergencyStop);
-        let _ = tokio::time::timeout(SHUTDOWN_TIMEOUT, self.dispatch(emergency)).await;
-
         #[cfg(windows)]
         {
-            let graceful_exit = CommandEnvelope::new(profile_id, Command::ShutdownDaemon);
-            let _ =
-                tokio::time::timeout(SHUTDOWN_TIMEOUT, self.send_untracked(graceful_exit)).await;
+            if self.has_owned_daemon() {
+                let graceful_exit = CommandEnvelope::new(profile_id, Command::ShutdownDaemon);
+                let request_id = graceful_exit.request_id;
+                let (ready_sender, ready_receiver) = oneshot::channel();
+                self.shutdown_ready
+                    .lock()
+                    .await
+                    .insert(request_id, ready_sender);
+                if self.send_untracked(graceful_exit).await.is_ok() {
+                    let _ = tokio::time::timeout(SHUTDOWN_TIMEOUT, ready_receiver).await;
+                }
+                self.shutdown_ready.lock().await.remove(&request_id);
+            } else {
+                let emergency = CommandEnvelope::new(profile_id, Command::EmergencyStop);
+                let _ = self.send_untracked(emergency).await;
+            }
         }
         self.shutdown.cancel();
 
@@ -256,59 +374,26 @@ impl DaemonBridge {
     }
 
     pub async fn dashboard_snapshot(&self) -> Value {
-        if self.cache.read().is_ok_and(|cache| cache.connected) {
-            let _ = self.ensure_selected_profile().await;
-        }
         if self.cached_run().is_none() {
             let _ = self.refresh_snapshot().await;
+        }
+        if self
+            .cache
+            .read()
+            .is_ok_and(|cache| cache.connected && cache.profiles.is_empty())
+        {
+            let _ = self.refresh_profiles().await;
         }
         self.project_dashboard()
     }
 
-    async fn ensure_selected_profile(&self) -> Result<Uuid, String> {
-        let _bootstrap_guard = self.profile_bootstrap.lock().await;
-        if let Ok(cache) = self.cache.read()
-            && let Some(profile_id) = cache.selected_profile_id
-            && cache.profiles.contains_key(&profile_id)
-        {
-            return Ok(profile_id);
-        }
-
-        let profile_id = default_profile_id();
-        match self
-            .dispatch(CommandEnvelope::new(profile_id, Command::ExportProfile))
-            .await
-        {
-            Ok(_) => {}
-            Err(error) if error.contains("was not found") => {
-                let mut profile = Profile::new("Primary profile");
-                profile.id = profile_id;
-                profile.onboarding_complete = false;
-                self.dispatch(CommandEnvelope::new(
-                    profile_id,
-                    Command::SaveProfile {
-                        profile: Box::new(profile.clone()),
-                    },
-                ))
-                .await?;
-                self.cache
-                    .write()
-                    .map_err(|_| "daemon cache lock poisoned".to_owned())?
-                    .profiles
-                    .insert(profile_id, profile);
-            }
-            Err(error) => return Err(error),
-        }
-
-        let mut cache = self
-            .cache
-            .write()
-            .map_err(|_| "daemon cache lock poisoned".to_owned())?;
-        if !cache.profiles.contains_key(&profile_id) {
-            return Err("daemon acknowledged the profile but did not return it".to_owned());
-        }
-        cache.selected_profile_id = Some(profile_id);
-        Ok(profile_id)
+    async fn refresh_profiles(&self) -> Result<(), String> {
+        let profile_id = self
+            .cached_run()
+            .map_or_else(Uuid::nil, |snapshot| snapshot.profile_id);
+        self.dispatch(CommandEnvelope::new(profile_id, Command::GetProfiles))
+            .await?;
+        Ok(())
     }
 
     pub async fn save_automation_settings(
@@ -357,6 +442,27 @@ impl DaemonBridge {
         if extension_id.trim().is_empty() || extension_id.len() > 128 {
             return Err("extension identifier is invalid".to_owned());
         }
+        let catalog_entry = legacy_catalog()?
+            .iter()
+            .find(|entry| entry.id == extension_id)
+            .ok_or_else(|| {
+                "extension is not present in the bundled compatibility catalog".to_owned()
+            })?;
+        if catalog_entry.status != LegacyEntryStatus::LegacyBridgeRequired {
+            return Err("built-in DSL assets do not require explicit trust".to_owned());
+        }
+        if !catalog_entry.sha256.eq_ignore_ascii_case(normalized) {
+            return Err(
+                "extension digest does not match the bundled compatibility catalog".to_owned(),
+            );
+        }
+        let inventory = self
+            .legacy_assets
+            .as_ref()
+            .map_err(|error| format!("compatibility assets are unavailable: {error}"))?;
+        if let AssetVerification::Unavailable(reason) = inventory.verification(&extension_id) {
+            return Err(format!("compatibility asset cannot be trusted: {reason}"));
+        }
         let mut profile = self.profile(profile_id)?;
         profile
             .trusted_extensions
@@ -372,16 +478,60 @@ impl DaemonBridge {
         Ok(())
     }
 
-    pub async fn select_profile(&self, profile_id: Uuid) -> Result<(), String> {
-        if self.profile(profile_id).is_err() {
-            self.dispatch(CommandEnvelope::new(profile_id, Command::ExportProfile))
-                .await?;
-            self.profile(profile_id)?;
+    /// Starts only a catalog-pinned, already trusted legacy asset. The `WebView`
+    /// supplies no path or executable; the daemon re-verifies the manifest,
+    /// profile consent, safe test policy, interpreter pin, timeout, and job
+    /// containment before accepting the command.
+    pub async fn start_legacy_extension(
+        &self,
+        profile_id: Uuid,
+        extension_id: String,
+        digest: String,
+    ) -> Result<(), String> {
+        let normalized = digest.strip_prefix("sha256:").unwrap_or(&digest);
+        let catalog_entry = legacy_catalog()?
+            .iter()
+            .find(|entry| entry.id == extension_id)
+            .ok_or_else(|| {
+                "extension is not present in the bundled compatibility catalog".to_owned()
+            })?;
+        if catalog_entry.status != LegacyEntryStatus::LegacyBridgeRequired {
+            return Err("only legacy bridge assets can use the compatibility runner".to_owned());
         }
-        self.cache
-            .write()
-            .map_err(|_| "daemon cache lock poisoned".to_owned())?
-            .selected_profile_id = Some(profile_id);
+        if !catalog_entry.sha256.eq_ignore_ascii_case(normalized) {
+            return Err(
+                "extension digest does not match the pinned compatibility catalog".to_owned(),
+            );
+        }
+        let inventory = self
+            .legacy_assets
+            .as_ref()
+            .map_err(|error| format!("compatibility assets are unavailable: {error}"))?;
+        if let AssetVerification::Unavailable(reason) = inventory.verification(&extension_id) {
+            return Err(format!("compatibility asset cannot run: {reason}"));
+        }
+        let profile = self.profile(profile_id)?;
+        let trusted = profile
+            .trusted_extensions
+            .get(&extension_id)
+            .is_some_and(|trusted| trusted.eq_ignore_ascii_case(normalized));
+        if !trusted {
+            return Err("trust this exact legacy script digest before running it".to_owned());
+        }
+        self.dispatch(CommandEnvelope::new(
+            profile_id,
+            Command::StartLegacy {
+                script_id: extension_id,
+                approved_sha256: normalized.to_ascii_lowercase(),
+            },
+        ))
+        .await?;
+        Ok(())
+    }
+
+    pub async fn select_profile(&self, profile_id: Uuid) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(profile_id, Command::SelectProfile))
+            .await?;
         Ok(())
     }
 
@@ -406,6 +556,9 @@ impl DaemonBridge {
                     self.set_connected(true, None);
                     let _ = self
                         .send_untracked(CommandEnvelope::new(Uuid::nil(), Command::GetSnapshot))
+                        .await;
+                    let _ = self
+                        .send_untracked(CommandEnvelope::new(Uuid::nil(), Command::GetProfiles))
                         .await;
 
                     let mut refresh = tokio::time::interval_at(
@@ -490,7 +643,7 @@ impl DaemonBridge {
         String,
     > {
         let spec = NamedPipeSpec::for_current_environment();
-        match connect_named_pipe(&spec).await {
+        match try_connect_named_pipe(&spec) {
             Ok(stream) => return Ok(daemon_client(stream)),
             Err(first_error) => {
                 self.ensure_owned_daemon().map_err(|spawn_error| {
@@ -515,6 +668,7 @@ impl DaemonBridge {
             .map_err(|error| error.to_string())
     }
 
+    #[allow(clippy::too_many_lines)] // Exhaustive protocol projection is intentionally kept in one audit point.
     async fn handle_event(
         &self,
         envelope: EventEnvelope,
@@ -543,12 +697,68 @@ impl DaemonBridge {
                 let profile_id = snapshot.profile_id;
                 if let Ok(mut cache) = self.cache.write() {
                     cache.run = Some(snapshot.clone());
+                    if !profile_id.is_nil() {
+                        cache.selected_profile_id = Some(profile_id);
+                    }
                 }
-                (!profile_id.is_nil())
-                    .then(|| CommandEnvelope::new(profile_id, Command::ExportProfile))
+                let profile_loaded = self
+                    .cache
+                    .read()
+                    .ok()
+                    .is_some_and(|cache| cache.profiles.contains_key(&profile_id));
+                if profile_loaded {
+                    None
+                } else {
+                    Some(CommandEnvelope::new(profile_id, Command::GetProfiles))
+                }
             }
             DaemonEvent::ProfileSaved { profile_id } => {
-                Some(CommandEnvelope::new(*profile_id, Command::ExportProfile))
+                Some(CommandEnvelope::new(*profile_id, Command::GetProfiles))
+            }
+            DaemonEvent::Profiles {
+                profiles,
+                selected_profile_id,
+            } => {
+                if !profiles
+                    .iter()
+                    .any(|profile| profile.id == *selected_profile_id)
+                {
+                    return Err(
+                        "daemon selected profile is absent from its profile list".to_owned()
+                    );
+                }
+                let mapped_profiles = profiles
+                    .iter()
+                    .cloned()
+                    .map(|profile| (profile.id, profile))
+                    .collect::<BTreeMap<_, _>>();
+                if mapped_profiles.len() != profiles.len() {
+                    return Err("daemon profile list contains duplicate identifiers".to_owned());
+                }
+                let mut cache = self
+                    .cache
+                    .write()
+                    .map_err(|_| "daemon cache lock poisoned".to_owned())?;
+                cache.profiles = mapped_profiles;
+                cache.selected_profile_id = Some(*selected_profile_id);
+                if let Some(snapshot) = cache.run.as_mut() {
+                    snapshot.profile_id = *selected_profile_id;
+                }
+                None
+            }
+            DaemonEvent::ProfileSelected { profile_id } => {
+                let mut cache = self
+                    .cache
+                    .write()
+                    .map_err(|_| "daemon cache lock poisoned".to_owned())?;
+                if !cache.profiles.contains_key(profile_id) {
+                    return Err("daemon selected an unknown profile".to_owned());
+                }
+                cache.selected_profile_id = Some(*profile_id);
+                if let Some(snapshot) = cache.run.as_mut() {
+                    snapshot.profile_id = *profile_id;
+                }
+                None
             }
             DaemonEvent::ProfileExported { profile_id, json } => {
                 let profile: Profile = serde_json::from_str(json)
@@ -569,6 +779,12 @@ impl DaemonBridge {
             DaemonEvent::ProfileDeleted { profile_id } => {
                 if let Ok(mut cache) = self.cache.write() {
                     cache.profiles.remove(profile_id);
+                }
+                Some(CommandEnvelope::new(Uuid::nil(), Command::GetProfiles))
+            }
+            DaemonEvent::ShutdownReady { request_id } => {
+                if let Some(waiter) = self.shutdown_ready.lock().await.remove(request_id) {
+                    let _ = waiter.send(());
                 }
                 None
             }
@@ -669,7 +885,9 @@ impl DaemonBridge {
         }
     }
 
+    #[allow(clippy::too_many_lines)] // One explicit compatibility projection keeps the JS boundary auditable.
     fn project_dashboard(&self) -> Value {
+        let roblox = project_roblox_session();
         let Ok(cache) = self.cache.read() else {
             return unavailable_dashboard("daemon cache lock poisoned");
         };
@@ -681,10 +899,13 @@ impl DaemonBridge {
             .selected_profile_id
             .or(run_profile_id)
             .or_else(|| cache.profiles.keys().next().copied())
-            .unwrap_or_else(default_profile_id);
+            .unwrap_or_else(Uuid::nil);
         let selected_profile = cache.profiles.get(&profile_id);
-        let profile_projection =
-            selected_profile.map_or_else(|| unavailable_profile(profile_id), project_profile);
+        let profile_projections = if cache.profiles.is_empty() {
+            vec![unavailable_profile(profile_id)]
+        } else {
+            cache.profiles.values().map(project_profile).collect()
+        };
         let state = actual_run.map_or(RunState::Faulted, |snapshot| snapshot.state);
         let reason = cache.run_state_reason.clone().unwrap_or_else(|| {
             if cache.connected {
@@ -702,25 +923,45 @@ impl DaemonBridge {
         let run_id = actual_run
             .filter(|snapshot| snapshot.state != RunState::Idle)
             .map(|snapshot| snapshot.run_id.to_string());
+        let (catalog_status, catalog_detail, extensions) = match legacy_catalog() {
+            Ok(catalog) => match &self.legacy_assets {
+                Ok(inventory) => {
+                    let verified = inventory.verified_count();
+                    (
+                        if verified == catalog.len() {
+                            "ready"
+                        } else {
+                            "warning"
+                        },
+                        format!(
+                            "{verified}/{} pinned routes and patterns verified",
+                            catalog.len()
+                        ),
+                        project_extensions(catalog, selected_profile, Some(inventory)),
+                    )
+                }
+                Err(error) => (
+                    "blocked",
+                    format!("Compatibility assets are unavailable: {error}"),
+                    project_extensions(catalog, selected_profile, None),
+                ),
+            },
+            Err(error) => (
+                "blocked",
+                format!("Compatibility catalog failed validation: {error}"),
+                Vec::new(),
+            ),
+        };
 
         json!({
             "runId": run_id,
             "runState": run_state_label(state),
             "runStateReason": reason,
             "activeProfileId": profile_id.to_string(),
-            "profiles": [profile_projection],
+            "profiles": profile_projections,
             "onboardingComplete": selected_profile.is_some_and(|profile| profile.onboarding_complete),
             "safeMode": actual_run.is_some_and(|snapshot| snapshot.safe_mode),
-            "session": {
-                "connected": false,
-                "processName": Value::Null,
-                "pid": Value::Null,
-                "windowTitle": Value::Null,
-                "resolution": Value::Null,
-                "dpi": Value::Null,
-                "foreground": false,
-                "calibration": Value::Null,
-            },
+            "session": roblox.session,
             "readiness": [
                 {
                     "id": "daemon",
@@ -737,14 +978,26 @@ impl DaemonBridge {
                 {
                     "id": "roblox",
                     "label": "Roblox client",
-                    "detail": "No verified Roblox session has been reported",
-                    "status": "checking",
+                    "detail": roblox.detail,
+                    "status": roblox.status,
+                },
+                {
+                    "id": "native-detectors",
+                    "label": "Native route detectors",
+                    "detail": "The input engine is installed, but normal runs stay blocked until reviewed field, hive, prompt, and combat detector assets are calibrated. Trusted legacy routes remain available through Extensions.",
+                    "status": "warning",
                 },
                 {
                     "id": "budget",
                     "label": "Item safeguards",
                     "detail": budget_summary(selected_profile),
                     "status": "ready",
+                },
+                {
+                    "id": "legacy-catalog",
+                    "label": "Compatibility catalog",
+                    "detail": catalog_detail,
+                    "status": catalog_status,
                 }
             ],
             "metrics": [],
@@ -756,7 +1009,7 @@ impl DaemonBridge {
                 "status": "active",
             })]),
             "features": selected_profile.map_or_else(Vec::<Value>::new, project_features),
-            "extensions": [],
+            "extensions": extensions,
             "logs": cache.logs.iter().collect::<Vec<_>>(),
             "updatedAt": updated_at,
         })
@@ -827,6 +1080,15 @@ impl DaemonBridge {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
+        if let Ok(inventory) = &self.legacy_assets {
+            command.env("NECTARPILOT_LEGACY_ROOT", &inventory.layout.legacy_root);
+            if let Some(assets_root) = &inventory.layout.assets_root {
+                command.env("NECTARPILOT_ASSETS_ROOT", assets_root);
+            }
+            if let Some(autohotkey) = &inventory.layout.autohotkey {
+                command.env("NECTARPILOT_AUTOHOTKEY_PATH", autohotkey);
+            }
+        }
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
@@ -888,6 +1150,15 @@ impl DaemonBridge {
             tracing::info!(pid = daemon.child.id(), path = %daemon.executable.display(), "stopping exact owned daemon");
             daemon.stop();
         }
+    }
+
+    #[cfg(windows)]
+    fn has_owned_daemon(&self) -> bool {
+        self.owned_daemon
+            .lock()
+            .ok()
+            .and_then(|mut owned| owned.as_mut().and_then(|daemon| daemon.is_running().ok()))
+            .unwrap_or(false)
     }
 
     #[cfg(windows)]
@@ -959,9 +1230,325 @@ fn development_daemon_candidates(start: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-fn default_profile_id() -> Uuid {
-    Uuid::parse_str("01900000-0000-7000-8000-000000000001")
-        .expect("built-in primary profile UUID is valid")
+fn legacy_catalog() -> Result<&'static [LegacyCatalogEntry], String> {
+    LEGACY_CATALOG
+        .get_or_init(build_legacy_catalog)
+        .as_ref()
+        .map(Vec::as_slice)
+        .map_err(Clone::clone)
+}
+
+fn build_legacy_catalog() -> Result<Vec<LegacyCatalogEntry>, String> {
+    let manifests = [("route", ROUTE_MANIFEST), ("pattern", PATTERN_MANIFEST)];
+    let mut catalog = Vec::new();
+    let mut identifiers = std::collections::HashSet::new();
+    for (expected_kind, source) in manifests {
+        let manifest: LegacyManifest = serde_yaml::from_str(source)
+            .map_err(|error| format!("invalid {expected_kind} manifest: {error}"))?;
+        validate_legacy_manifest(&manifest, expected_kind)?;
+        for entry in manifest.entries {
+            let id = format!("legacy:{expected_kind}:{}", entry.legacy_source);
+            if id.len() > 128 {
+                return Err(format!("catalog identifier is too long: {id}"));
+            }
+            if !identifiers.insert(id.clone()) {
+                return Err(format!("duplicate compatibility identifier: {id}"));
+            }
+            let display_name = legacy_display_name(&entry.legacy_source);
+            catalog.push(LegacyCatalogEntry {
+                id,
+                kind: expected_kind.to_owned(),
+                source: entry.legacy_source,
+                display_name,
+                sha256: entry.sha256,
+                bytes: entry.bytes,
+                status: entry.status,
+                generated_asset: entry.generated_asset,
+                unsupported_syntax: entry.issue_counts.unsupported_syntax,
+                unsafe_capabilities: entry.issue_counts.unsafe_capabilities,
+                invalid_values: entry.issue_counts.invalid_values,
+            });
+        }
+    }
+    Ok(catalog)
+}
+
+fn validate_legacy_manifest(manifest: &LegacyManifest, expected_kind: &str) -> Result<(), String> {
+    if manifest.format_version != 1 {
+        return Err(format!(
+            "{} manifest uses unsupported format version {}",
+            expected_kind, manifest.format_version
+        ));
+    }
+    if manifest.kind != expected_kind {
+        return Err(format!(
+            "expected {expected_kind} manifest, received {}",
+            manifest.kind
+        ));
+    }
+    if manifest.entries.len() != manifest.total_files
+        || manifest.safe_dsl_files + manifest.legacy_bridge_files != manifest.total_files
+    {
+        return Err(format!(
+            "{expected_kind} manifest file counts do not reconcile"
+        ));
+    }
+    let safe_count = manifest
+        .entries
+        .iter()
+        .filter(|entry| entry.status == LegacyEntryStatus::SafeDsl)
+        .count();
+    let bridge_count = manifest.entries.len() - safe_count;
+    if safe_count != manifest.safe_dsl_files || bridge_count != manifest.legacy_bridge_files {
+        return Err(format!(
+            "{expected_kind} manifest status counts do not reconcile"
+        ));
+    }
+    for entry in &manifest.entries {
+        let source = Path::new(&entry.legacy_source);
+        let mut components = source.components();
+        let starts_in_declared_directory = components.next().is_some_and(|component| {
+            matches!(component, std::path::Component::Normal(value) if value == std::ffi::OsStr::new(&manifest.source_directory))
+        });
+        if !starts_in_declared_directory
+            || !components.all(|component| matches!(component, std::path::Component::Normal(_)))
+        {
+            return Err(format!(
+                "{expected_kind} manifest contains an unsafe source path: {}",
+                entry.legacy_source
+            ));
+        }
+        if entry.bytes == 0
+            || entry.sha256.len() != 64
+            || !entry
+                .sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(format!(
+                "{expected_kind} manifest contains invalid integrity data for {}",
+                entry.legacy_source
+            ));
+        }
+        match entry.status {
+            LegacyEntryStatus::SafeDsl => {
+                if entry.requires_explicit_consent || entry.generated_asset.is_none() {
+                    return Err(format!(
+                        "safe DSL entry {} has inconsistent consent metadata",
+                        entry.legacy_source
+                    ));
+                }
+            }
+            LegacyEntryStatus::LegacyBridgeRequired => {
+                if !entry.requires_explicit_consent || entry.generated_asset.is_some() {
+                    return Err(format!(
+                        "legacy bridge entry {} has inconsistent consent metadata",
+                        entry.legacy_source
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn legacy_display_name(source: &str) -> String {
+    let stem = Path::new(source)
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("Legacy asset");
+    stem.split(['-', '_'])
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut characters = part.chars();
+            characters.next().map_or_else(String::new, |first| {
+                first.to_uppercase().collect::<String>() + characters.as_str()
+            })
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn verify_legacy_assets(
+    app: &AppHandle,
+    catalog: &[LegacyCatalogEntry],
+) -> Result<LegacyAssetInventory, String> {
+    let mut layout = discover_trusted_asset_layout(app)?;
+    let runtime_error = verify_autohotkey_runtime(&layout).err();
+    if runtime_error.is_some() {
+        layout.autohotkey = None;
+    }
+    let mut entries = HashMap::with_capacity(catalog.len());
+    for entry in catalog {
+        let status = verify_catalog_entry(&layout, entry, runtime_error.as_deref())
+            .map_or_else(AssetVerification::Unavailable, |()| {
+                AssetVerification::Verified
+            });
+        entries.insert(entry.id.clone(), status);
+    }
+    Ok(LegacyAssetInventory { layout, entries })
+}
+
+fn discover_trusted_asset_layout(app: &AppHandle) -> Result<TrustedAssetLayout, String> {
+    let executable = std::env::current_exe()
+        .map_err(|error| format!("could not resolve executable for asset discovery: {error}"))?;
+    let executable_directory = executable
+        .parent()
+        .ok_or_else(|| "desktop executable has no parent directory".to_owned())?;
+    let resource_directory = app.path().resource_dir().ok();
+    let mut candidates = Vec::new();
+    if let Some(resources) = &resource_directory {
+        candidates.push(resources.clone());
+        candidates.push(resources.join("legacy"));
+    }
+    candidates.push(executable_directory.join("legacy"));
+    candidates.push(executable_directory.to_path_buf());
+
+    if cfg!(debug_assertions) {
+        for ancestor in executable.ancestors() {
+            if ancestor.join(".git").is_dir()
+                && ancestor.join("Cargo.toml").is_file()
+                && ancestor.join("assets").is_dir()
+            {
+                candidates.push(ancestor.to_path_buf());
+            }
+        }
+    }
+
+    for candidate in candidates {
+        if !candidate.join("paths").is_dir() || !candidate.join("patterns").is_dir() {
+            continue;
+        }
+        let Ok(legacy_root) = candidate.canonicalize() else {
+            continue;
+        };
+        let assets_root = [
+            candidate.join("assets"),
+            candidate
+                .parent()
+                .map_or_else(PathBuf::new, |parent| parent.join("assets")),
+            resource_directory
+                .as_ref()
+                .map_or_else(PathBuf::new, |resources| resources.join("assets")),
+        ]
+        .into_iter()
+        .find(|root| {
+            root.join("routes").join("_legacy-manifest.yaml").is_file()
+                && root
+                    .join("patterns")
+                    .join("_legacy-manifest.yaml")
+                    .is_file()
+        })
+        .and_then(|root| root.canonicalize().ok());
+        let autohotkey = [
+            candidate.join("AutoHotkey64.exe"),
+            candidate.join("submacros").join("AutoHotkey64.exe"),
+            candidate
+                .parent()
+                .map_or_else(PathBuf::new, |parent| parent.join("AutoHotkey64.exe")),
+            candidate.parent().map_or_else(PathBuf::new, |parent| {
+                parent.join("submacros").join("AutoHotkey64.exe")
+            }),
+        ]
+        .into_iter()
+        .find(|path| path.is_file())
+        .and_then(|path| path.canonicalize().ok());
+        return Ok(TrustedAssetLayout {
+            legacy_root,
+            assets_root,
+            autohotkey,
+        });
+    }
+    Err("no packaged, portable, or development compatibility asset root was found".to_owned())
+}
+
+fn verify_catalog_entry(
+    layout: &TrustedAssetLayout,
+    entry: &LegacyCatalogEntry,
+    runtime_error: Option<&str>,
+) -> Result<(), String> {
+    if entry.status == LegacyEntryStatus::LegacyBridgeRequired
+        && let Some(error) = runtime_error
+    {
+        return Err(error.to_owned());
+    }
+    let source = confined_asset_path(&layout.legacy_root, Path::new(&entry.source))
+        .map_err(|reason| format!("{}: {reason}", entry.source))?;
+    let metadata = source
+        .metadata()
+        .map_err(|_| format!("{} is unavailable", entry.source))?;
+    if metadata.len() != entry.bytes {
+        return Err(format!("{} size does not match its manifest", entry.source));
+    }
+    let actual_digest = sha256_file(&source)
+        .map_err(|_| format!("{} could not be integrity checked", entry.source))?;
+    if actual_digest != entry.sha256 {
+        return Err(format!(
+            "{} digest does not match its manifest",
+            entry.source
+        ));
+    }
+
+    if let Some(generated_asset) = &entry.generated_asset {
+        let assets_root = layout
+            .assets_root
+            .as_ref()
+            .ok_or_else(|| "the validated DSL asset directory is unavailable".to_owned())?;
+        let relative = Path::new("patterns").join(generated_asset);
+        confined_asset_path(assets_root, &relative)
+            .map_err(|reason| format!("generated asset {generated_asset}: {reason}"))?;
+    }
+    Ok(())
+}
+
+fn verify_autohotkey_runtime(layout: &TrustedAssetLayout) -> Result<(), String> {
+    let runtime = layout
+        .autohotkey
+        .as_ref()
+        .ok_or_else(|| "the contained AutoHotkey runtime is not packaged".to_owned())?;
+    let actual = sha256_file(runtime).map_err(|_| {
+        "the contained AutoHotkey runtime could not be integrity checked".to_owned()
+    })?;
+    if actual != AUTOHOTKEY64_SHA256 {
+        return Err("the contained AutoHotkey runtime digest does not match its pin".to_owned());
+    }
+    Ok(())
+}
+
+fn confined_asset_path(root: &Path, relative: &Path) -> Result<PathBuf, String> {
+    if relative.is_absolute()
+        || relative
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        return Err("path is not a confined relative asset path".to_owned());
+    }
+    let canonical_root = root
+        .canonicalize()
+        .map_err(|_| "trusted asset root is unavailable".to_owned())?;
+    let canonical = canonical_root
+        .join(relative)
+        .canonicalize()
+        .map_err(|_| "asset file is unavailable".to_owned())?;
+    if !canonical.starts_with(&canonical_root) || !canonical.is_file() {
+        return Err("asset escapes its trusted root or is not a file".to_owned());
+    }
+    Ok(canonical)
+}
+
+fn sha256_file(path: &Path) -> Result<String, std::io::Error> {
+    let mut file = std::fs::File::open(path)?;
+    let mut digest = Sha256::new();
+    let mut buffer = [0_u8; 16 * 1024];
+    loop {
+        let read = file.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        digest.update(&buffer[..read]);
+    }
+    let digest = digest.finalize();
+    Ok(format!("{digest:x}"))
 }
 
 fn run_state_label(state: RunState) -> &'static str {
@@ -974,6 +1561,96 @@ fn run_state_label(state: RunState) -> &'static str {
         RunState::NeedsAttention => "NeedsAttention",
         RunState::Stopping => "Stopping",
         RunState::Faulted => "Faulted",
+    }
+}
+
+#[cfg(windows)]
+fn project_roblox_session() -> RobloxDiscoveryProjection {
+    match discover_roblox_clients() {
+        Ok(candidates) => {
+            let visible = candidates
+                .iter()
+                .filter_map(|candidate| candidate.window.map(|window| (candidate.pid, window)))
+                .collect::<Vec<_>>();
+            match visible.as_slice() {
+                [] if candidates.is_empty() => disconnected_roblox_projection(
+                    "No official RobloxPlayerBeta process is open",
+                    "checking",
+                ),
+                [] => disconnected_roblox_projection(
+                    "RobloxPlayerBeta is starting or has no usable client window yet",
+                    "checking",
+                ),
+                [(pid, window)] => {
+                    let geometry = window.geometry;
+                    let minimized = geometry.minimized;
+                    RobloxDiscoveryProjection {
+                        session: json!({
+                            "connected": true,
+                            "processName": "RobloxPlayerBeta",
+                            "pid": pid.get(),
+                            "windowTitle": "Verified Roblox client window",
+                            "resolution": format!("{}×{}", geometry.client.width, geometry.client.height),
+                            "dpi": geometry.dpi,
+                            "foreground": window.is_foreground,
+                            "calibration": if minimized { "low" } else if window.is_foreground { "high" } else { "medium" },
+                        }),
+                        detail: if minimized {
+                            format!(
+                                "RobloxPlayerBeta PID {} is open but minimized; restore it before a safe run",
+                                pid.get()
+                            )
+                        } else if window.is_foreground {
+                            format!(
+                                "Verified RobloxPlayerBeta PID {} is foreground at {}×{}",
+                                pid.get(),
+                                geometry.client.width,
+                                geometry.client.height
+                            )
+                        } else {
+                            format!(
+                                "Verified RobloxPlayerBeta PID {} is open; focus it before a safe run",
+                                pid.get()
+                            )
+                        },
+                        status: if minimized { "warning" } else { "ready" },
+                    }
+                }
+                _ => disconnected_roblox_projection(
+                    "Multiple RobloxPlayerBeta client windows are open; explicitly adopt one before automation",
+                    "blocked",
+                ),
+            }
+        }
+        Err(error) => disconnected_roblox_projection(
+            &format!("Could not inspect Roblox processes: {error}"),
+            "warning",
+        ),
+    }
+}
+
+#[cfg(not(windows))]
+fn project_roblox_session() -> RobloxDiscoveryProjection {
+    disconnected_roblox_projection(
+        "Roblox session discovery is available only on Windows",
+        "blocked",
+    )
+}
+
+fn disconnected_roblox_projection(detail: &str, status: &'static str) -> RobloxDiscoveryProjection {
+    RobloxDiscoveryProjection {
+        session: json!({
+            "connected": false,
+            "processName": Value::Null,
+            "pid": Value::Null,
+            "windowTitle": Value::Null,
+            "resolution": Value::Null,
+            "dpi": Value::Null,
+            "foreground": false,
+            "calibration": Value::Null,
+        }),
+        detail: detail.to_owned(),
+        status,
     }
 }
 
@@ -1140,6 +1817,99 @@ fn project_features(profile: &Profile) -> Vec<Value> {
         })
     })
     .collect()
+}
+
+fn project_extensions(
+    catalog: &[LegacyCatalogEntry],
+    profile: Option<&Profile>,
+    inventory: Option<&LegacyAssetInventory>,
+) -> Vec<Value> {
+    catalog
+        .iter()
+        .map(|entry| {
+            let verification = inventory.map_or_else(
+                || AssetVerification::Unavailable("compatibility assets are unavailable".to_owned()),
+                |inventory| inventory.verification(&entry.id),
+            );
+            let stored_digest = profile
+                .and_then(|profile| profile.trusted_extensions.get(&entry.id));
+            let digest_changed = stored_digest.is_some_and(|digest| digest != &entry.sha256);
+            let trust = match (&entry.status, &verification, stored_digest) {
+                (LegacyEntryStatus::SafeDsl, AssetVerification::Verified, _) => "built_in",
+                (_, AssetVerification::Unavailable(_), _) => "blocked",
+                (LegacyEntryStatus::LegacyBridgeRequired, AssetVerification::Verified, Some(digest))
+                    if digest == &entry.sha256 => "trusted",
+                (LegacyEntryStatus::LegacyBridgeRequired, AssetVerification::Verified, _) => {
+                    "review_required"
+                }
+            };
+            let unavailable_reason = match &verification {
+                AssetVerification::Verified => None,
+                AssetVerification::Unavailable(reason) => Some(reason.as_str()),
+            };
+            let description = if let Some(reason) = unavailable_reason {
+                format!(
+                    "{} {} is blocked: {reason}.",
+                    capitalize(&entry.kind),
+                    entry.source
+                )
+            } else if entry.status == LegacyEntryStatus::SafeDsl {
+                format!(
+                    "Converted from {} into the validated {} DSL asset.",
+                    entry.source,
+                    entry.generated_asset.as_deref().unwrap_or("NectarPilot")
+                )
+            } else if digest_changed {
+                format!(
+                    "The pinned digest changed since the last review. Re-review this contained legacy {} before use.",
+                    entry.kind
+                )
+            } else {
+                format!(
+                    "Pinned legacy {} ({} bytes; {} unsupported, {} unsafe-capability, {} invalid-value findings) requiring the opt-in compatibility worker.",
+                    entry.kind,
+                    entry.bytes,
+                    entry.unsupported_syntax,
+                    entry.unsafe_capabilities,
+                    entry.invalid_values
+                )
+            };
+            let enabled = match trust {
+                "built_in" => true,
+                "trusted" => profile.is_some_and(|profile| {
+                    profile.automation.features.custom_extensions
+                }),
+                _ => false,
+            };
+            let permissions = if entry.status == LegacyEntryStatus::SafeDsl {
+                vec!["Validated movement plan"]
+            } else {
+                vec![
+                    "Contained legacy AHK runner",
+                    "Verified keyboard input",
+                    "Verified mouse input",
+                ]
+            };
+            json!({
+                "id": entry.id,
+                "name": format!("{} · {}", capitalize(&entry.kind), entry.display_name),
+                "author": "Natro Team contributors",
+                "version": LEGACY_VERSION,
+                "description": description,
+                "digest": format!("sha256:{}", entry.sha256),
+                "trust": trust,
+                "permissions": permissions,
+                "enabled": enabled,
+            })
+        })
+        .collect()
+}
+
+fn capitalize(value: &str) -> String {
+    let mut characters = value.chars();
+    characters.next().map_or_else(String::new, |first| {
+        first.to_uppercase().collect::<String>() + characters.as_str()
+    })
 }
 
 fn budget_summary(profile: Option<&Profile>) -> &'static str {
@@ -1367,19 +2137,15 @@ fn apply_feature_map(flags: &mut FeatureFlags, values: &BTreeMap<String, bool>) 
 
 #[cfg(test)]
 mod tests {
+    use std::{collections::HashMap, path::PathBuf};
+
     use nectarpilot_contracts::Profile;
 
     use super::{
-        budget_summary, default_profile_id, project_profile, run_state_label, safe_ui_settings,
+        AssetVerification, LegacyAssetInventory, LegacyEntryStatus, TrustedAssetLayout,
+        budget_summary, legacy_catalog, project_extensions, project_profile, run_state_label,
+        safe_ui_settings, verify_autohotkey_runtime, verify_catalog_entry,
     };
-
-    #[test]
-    fn primary_profile_id_matches_the_desktop_seed() {
-        assert_eq!(
-            default_profile_id().to_string(),
-            "01900000-0000-7000-8000-000000000001"
-        );
-    }
 
     #[test]
     fn disconnected_projection_keeps_all_item_budgets_at_zero() {
@@ -1412,5 +2178,72 @@ mod tests {
             run_state_label(nectarpilot_contracts::RunState::NeedsAttention),
             "NeedsAttention"
         );
+    }
+
+    #[test]
+    fn bundled_legacy_manifests_form_a_complete_pinned_catalog() {
+        let catalog = legacy_catalog().expect("catalog");
+        assert_eq!(catalog.len(), 103);
+        assert_eq!(
+            catalog
+                .iter()
+                .filter(|entry| entry.status == LegacyEntryStatus::LegacyBridgeRequired)
+                .count(),
+            102
+        );
+        assert!(catalog.iter().all(|entry| entry.sha256.len() == 64));
+    }
+
+    #[test]
+    fn extension_projection_uses_profile_digest_trust() {
+        let catalog = legacy_catalog().expect("catalog");
+        let entries = catalog
+            .iter()
+            .map(|entry| (entry.id.clone(), AssetVerification::Verified))
+            .collect::<HashMap<_, _>>();
+        let inventory = LegacyAssetInventory {
+            layout: TrustedAssetLayout {
+                legacy_root: PathBuf::new(),
+                assets_root: None,
+                autohotkey: None,
+            },
+            entries,
+        };
+        let legacy = catalog
+            .iter()
+            .find(|entry| entry.status == LegacyEntryStatus::LegacyBridgeRequired)
+            .expect("legacy entry");
+        let mut profile = Profile::new("Safe");
+        let before = project_extensions(catalog, Some(&profile), Some(&inventory));
+        let projected = before
+            .iter()
+            .find(|entry| entry["id"] == legacy.id)
+            .expect("projected entry");
+        assert_eq!(projected["trust"], "review_required");
+
+        profile
+            .trusted_extensions
+            .insert(legacy.id.clone(), legacy.sha256.clone());
+        let after = project_extensions(catalog, Some(&profile), Some(&inventory));
+        let projected = after
+            .iter()
+            .find(|entry| entry["id"] == legacy.id)
+            .expect("projected entry");
+        assert_eq!(projected["trust"], "trusted");
+    }
+
+    #[test]
+    fn development_compatibility_assets_match_every_integrity_pin() {
+        let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let layout = TrustedAssetLayout {
+            legacy_root: workspace.clone(),
+            assets_root: Some(workspace.join("assets")),
+            autohotkey: Some(workspace.join("submacros/AutoHotkey64.exe")),
+        };
+        verify_autohotkey_runtime(&layout).expect("pinned AutoHotkey runtime");
+        for entry in legacy_catalog().expect("catalog") {
+            verify_catalog_entry(&layout, entry, None)
+                .unwrap_or_else(|error| panic!("{} failed verification: {error}", entry.source));
+        }
     }
 }

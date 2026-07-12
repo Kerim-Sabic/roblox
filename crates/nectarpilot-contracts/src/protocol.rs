@@ -71,6 +71,15 @@ pub enum Command {
     /// fail-safe input release as an emergency stop before process exit.
     ShutdownDaemon,
     GetSnapshot,
+    GetProfiles,
+    SelectProfile,
+    /// Runs one manifest-pinned legacy `AutoHotkey` asset through the daemon's
+    /// contained compatibility port. The daemon re-checks both this digest and
+    /// the profile's stored hash-bound consent before process creation.
+    StartLegacy {
+        script_id: String,
+        approved_sha256: String,
+    },
     SaveProfile {
         profile: Box<Profile>,
     },
@@ -137,6 +146,13 @@ pub enum DaemonEvent {
     ProfileSaved {
         profile_id: Uuid,
     },
+    Profiles {
+        profiles: Vec<Profile>,
+        selected_profile_id: Uuid,
+    },
+    ProfileSelected {
+        profile_id: Uuid,
+    },
     ProfileDeleted {
         profile_id: Uuid,
     },
@@ -147,6 +163,11 @@ pub enum DaemonEvent {
     SafeModeEntered {
         crash_count: usize,
         window_seconds: u64,
+    },
+    /// Final acknowledgement after input cleanup. The daemon flushes this
+    /// event before a requested graceful process exit.
+    ShutdownReady {
+        request_id: Uuid,
     },
 }
 

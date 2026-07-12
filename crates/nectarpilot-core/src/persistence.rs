@@ -427,9 +427,12 @@ fn event_type_name(event: &EventEnvelope) -> &'static str {
         DaemonEvent::Log { .. } => "log",
         DaemonEvent::Snapshot(_) => "snapshot",
         DaemonEvent::ProfileSaved { .. } => "profile_saved",
+        DaemonEvent::Profiles { .. } => "profiles",
+        DaemonEvent::ProfileSelected { .. } => "profile_selected",
         DaemonEvent::ProfileDeleted { .. } => "profile_deleted",
         DaemonEvent::ProfileExported { .. } => "profile_exported",
         DaemonEvent::SafeModeEntered { .. } => "safe_mode_entered",
+        DaemonEvent::ShutdownReady { .. } => "shutdown_ready",
     }
 }
 

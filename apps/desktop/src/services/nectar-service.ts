@@ -28,6 +28,11 @@ export interface NectarService {
     extensionId: string,
     digest: string,
   ): Promise<void>;
+  runLegacyExtension(
+    profileId: string,
+    extensionId: string,
+    digest: string,
+  ): Promise<void>;
   setCompactMode(compact: boolean): Promise<void>;
 }
 
@@ -114,6 +119,14 @@ export class TauriNectarService implements NectarService {
 
   trustExtension(profileId: string, extensionId: string, digest: string) {
     return invoke<void>("trust_extension", { profileId, extensionId, digest });
+  }
+
+  runLegacyExtension(profileId: string, extensionId: string, digest: string) {
+    return invoke<void>("start_legacy_extension", {
+      profileId,
+      extensionId,
+      digest,
+    });
   }
 
   async setCompactMode(compact: boolean): Promise<void> {
@@ -284,6 +297,26 @@ export class MockNectarService implements NectarService {
     this.addTimeline(
       "Extension trusted",
       "The reviewed extension digest was added to this profile",
+      "warning",
+    );
+    this.publish();
+  }
+
+  async runLegacyExtension(
+    _profileId: string,
+    extensionId: string,
+    digest: string,
+  ): Promise<void> {
+    const extension = this.snapshot.extensions.find(
+      (candidate) =>
+        candidate.id === extensionId && candidate.digest === digest,
+    );
+    if (!extension || extension.trust !== "trusted") {
+      throw new Error("Trust this exact legacy digest before running it.");
+    }
+    this.addTimeline(
+      "Legacy compatibility requested",
+      `${extension.name} will run only in the contained daemon worker`,
       "warning",
     );
     this.publish();

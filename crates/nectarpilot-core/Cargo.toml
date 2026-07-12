@@ -10,6 +10,7 @@ rust-version.workspace = true
 [dependencies]
 async-trait.workspace = true
 chrono.workspace = true
+futures.workspace = true
 hex.workspace = true
 nectarpilot-contracts = { path = "../nectarpilot-contracts", version = "=0.1.0" }
 parking_lot.workspace = true

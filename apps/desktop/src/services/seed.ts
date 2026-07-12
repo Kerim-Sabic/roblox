@@ -376,7 +376,7 @@ export function createMockSnapshot(): DashboardSnapshot {
         enabled: true,
       },
       {
-        id: "legacy-cactus",
+        id: "legacy:pattern:patterns/e_lol.ahk",
         name: "Cactus spiral (legacy)",
         author: "Imported from Natro Macro",
         version: "1.1.2",

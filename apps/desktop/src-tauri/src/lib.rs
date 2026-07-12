@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use bridge::{DaemonBridge, DispatchReceipt, UiAutomationSettings};
-use nectarpilot_contracts::{CommandEnvelope, RunSnapshot};
+use nectarpilot_contracts::{Command, CommandEnvelope, RunSnapshot};
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{Manager, PhysicalSize, Size, WebviewWindow};
@@ -49,10 +49,9 @@ fn get_shell_info(
         version: app.package_info().version.to_string(),
         developer_checkout,
         compact,
-        // Release builds stay update-disabled until the repository owner adds
-        // the matching public key and HTTPS channel endpoint. The plugin still
-        // packages signed artifacts when release secrets are supplied.
-        updater_enabled: false,
+        // Developer checkouts never self-update. Packaged builds use the
+        // signed stable or beta endpoint compiled into their Tauri config.
+        updater_enabled: !developer_checkout,
     })
 }
 
@@ -112,6 +111,12 @@ async fn dispatch_command(
     bridge: tauri::State<'_, Arc<DaemonBridge>>,
     envelope: CommandEnvelope,
 ) -> Result<DispatchReceipt, String> {
+    if matches!(
+        &envelope.command,
+        Command::ShutdownDaemon | Command::StartLegacy { .. }
+    ) {
+        return Err("restricted daemon commands are unavailable to the WebView".to_owned());
+    }
     bridge.dispatch(envelope).await
 }
 
@@ -156,6 +161,19 @@ async fn trust_extension(
         .await
 }
 
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn start_legacy_extension(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+    extension_id: String,
+    digest: String,
+) -> Result<(), String> {
+    bridge
+        .start_legacy_extension(profile_id, extension_id, digest)
+        .await
+}
+
 pub fn run() {
     let application = tauri::Builder::default()
         .manage(ShellState::default())
@@ -184,7 +202,8 @@ pub fn run() {
             select_profile,
             save_automation_settings,
             complete_onboarding,
-            trust_extension
+            trust_extension,
+            start_legacy_extension
         ])
         .build(tauri::generate_context!())
         .expect("NectarPilot desktop shell failed to build");

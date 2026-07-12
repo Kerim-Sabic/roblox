@@ -1539,7 +1539,11 @@
     border: 1px solid color-mix(in srgb, var(--info) 28%, var(--border));
     border-radius: var(--radius);
     background:
-      radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--info) 10%, transparent), transparent 35%),
+      radial-gradient(
+        circle at 92% 12%,
+        color-mix(in srgb, var(--info) 10%, transparent),
+        transparent 35%
+      ),
       var(--surface);
     box-shadow: var(--shadow-sm);
   }
@@ -2114,6 +2118,34 @@
     display: flex;
     flex-direction: column;
     gap: 9px;
+  }
+  .extension-toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+  }
+  .extension-results {
+    color: var(--text-tertiary);
+    font-size: 9.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .extension-empty {
+    min-height: 150px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 5px;
+    color: var(--text-tertiary);
+    text-align: center;
+  }
+  .extension-empty strong {
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+  .extension-empty span {
+    font-size: 9.5px;
   }
   .extension-card {
     display: flex;
@@ -3374,6 +3406,9 @@
     }
     .extension-card {
       flex-direction: column;
+    }
+    .extension-toolbar {
+      grid-template-columns: 1fr;
     }
     .diagnostic-status-grid {
       grid-template-columns: 1fr;

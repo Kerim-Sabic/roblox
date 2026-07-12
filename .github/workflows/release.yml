@@ -48,6 +48,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --prod --audit-level high
       - run: ./scripts/verify-no-secrets.ps1
+      - run: ./scripts/verify-parity-fixtures.ps1 -RequireCaptured
       - name: Enforce beta/stable release gate
         env:
           RELEASE_CHANNEL: ${{ inputs.channel }}
@@ -64,14 +65,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: apps/desktop
           tagName: ${{ inputs.tag }}
           releaseName: NectarPilot ${{ inputs.tag }} (${{ inputs.channel }})
           releaseDraft: true
           prerelease: ${{ inputs.channel == 'beta' }}
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+          args: ${{ inputs.channel == 'beta' && '--config src-tauri/tauri.beta.conf.json' || '' }}
+
+      - name: Refresh the public beta update channel
+        if: inputs.channel == 'beta'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          CHANNEL_TAG: beta
+        shell: pwsh
+        run: |
+          $channelExists = gh release view $env:CHANNEL_TAG --json id 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:CHANNEL_TAG --prerelease --title 'NectarPilot beta update channel' --notes 'Machine-managed signed updater manifest for the beta channel.'
+          }
+          $download = Join-Path $env:RUNNER_TEMP 'nectarpilot-beta-updater'
+          New-Item -ItemType Directory -Force -Path $download | Out-Null
+          gh release download $env:RELEASE_TAG -p latest.json -D $download
+          gh release upload $env:CHANNEL_TAG (Join-Path $download 'latest.json') --clobber
 
       - name: Package portable ZIP and checksum
         env:

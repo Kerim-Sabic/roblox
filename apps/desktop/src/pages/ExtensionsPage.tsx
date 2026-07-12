@@ -4,13 +4,16 @@ import {
   Check,
   ChevronRight,
   FileKey2,
+  Filter,
   LockKeyhole,
+  Play,
   Puzzle,
+  Search,
   ShieldAlert,
   ShieldCheck,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { NectarActions } from "../hooks/useNectarPilot";
 import type { DashboardSnapshot, ExtensionManifest } from "../types/contracts";
 
@@ -27,6 +30,9 @@ const trustLabels = {
   blocked: "Blocked",
 } as const;
 
+type CatalogFilter =
+  "all" | "routes" | "patterns" | "review_required" | "trusted" | "blocked";
+
 export function ExtensionsPage({
   snapshot,
   actions,
@@ -34,6 +40,28 @@ export function ExtensionsPage({
 }: ExtensionsPageProps) {
   const [reviewing, setReviewing] = useState<ExtensionManifest | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<CatalogFilter>("all");
+  const extensions = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase();
+    return snapshot.extensions.filter((extension) => {
+      const matchesQuery =
+        normalized.length === 0 ||
+        [
+          extension.name,
+          extension.author,
+          extension.description,
+          extension.id,
+          extension.digest,
+        ].some((value) => value.toLocaleLowerCase().includes(normalized));
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "routes" && extension.id.startsWith("legacy:route:")) ||
+        (filter === "patterns" && extension.id.startsWith("legacy:pattern:")) ||
+        extension.trust === filter;
+      return matchesQuery && matchesFilter;
+    });
+  }, [filter, query, snapshot.extensions]);
   const trust = async () => {
     if (!reviewing || !confirmed) return;
     await actions.trustExtension(reviewing.id, reviewing.digest);
@@ -68,8 +96,41 @@ export function ExtensionsPage({
           Compatibility settings
         </button>
       </div>
+      <section
+        className="extension-toolbar"
+        aria-label="Extension catalog filters"
+      >
+        <label className="search-input">
+          <Search size={15} />
+          <input
+            aria-label="Search compatibility catalog"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search 103 pinned routes and patterns"
+          />
+        </label>
+        <label className="filter-select">
+          <Filter size={15} />
+          <select
+            aria-label="Filter compatibility catalog"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as CatalogFilter)}
+          >
+            <option value="all">All entries</option>
+            <option value="routes">Routes</option>
+            <option value="patterns">Patterns</option>
+            <option value="review_required">Review required</option>
+            <option value="trusted">Trusted</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>
+        <span className="extension-results">
+          {extensions.length} of {snapshot.extensions.length}
+        </span>
+      </section>
       <section className="extension-list">
-        {snapshot.extensions.map((extension) => (
+        {extensions.map((extension) => (
           <article key={extension.id} className="panel extension-card">
             <span className={`extension-icon extension-${extension.trust}`}>
               {extension.trust === "blocked" ? (
@@ -119,6 +180,19 @@ export function ExtensionsPage({
                   <button className="button button-secondary button-small">
                     Inspect change
                   </button>
+                ) : extension.id.startsWith("legacy:") ? (
+                  <button
+                    className="button button-secondary button-small"
+                    disabled={pendingAction !== null}
+                    onClick={() =>
+                      void actions.runLegacyExtension(
+                        extension.id,
+                        extension.digest,
+                      )
+                    }
+                  >
+                    <Play size={14} /> Run contained script
+                  </button>
                 ) : (
                   <label
                     className="switch-only"
@@ -136,6 +210,13 @@ export function ExtensionsPage({
             </div>
           </article>
         ))}
+        {extensions.length === 0 && (
+          <div className="panel extension-empty">
+            <Search size={20} />
+            <strong>No catalog entries match</strong>
+            <span>Clear the search or choose a different filter.</span>
+          </div>
+        )}
       </section>
       {reviewing && (
         <div className="dialog-backdrop">

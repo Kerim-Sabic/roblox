@@ -8,17 +8,32 @@
 //! backends allow the daemon to exercise the same focus, ownership, and recovery
 //! rules in tests on every operating system.
 
+pub mod capture;
 pub mod diagnostics;
 pub mod emergency;
 pub mod freeze;
 pub mod input;
 pub mod job;
+pub mod perception;
 pub mod pipe;
 pub mod process;
 pub mod secrets;
 pub mod session;
+pub mod task_executor;
 
 #[cfg(windows)]
 pub mod windows_backend;
 
-pub use session::{ProcessId, SessionTarget, WindowHandle};
+pub use capture::{
+    CaptureError, ClientCapture, ClientFrame, NormalizedCrop, PixelRegion, WindowsClientCapture,
+    normalized_to_pixels,
+};
+pub use perception::{
+    ConsensusPolicy, ConstrainedOcr, LivePerceptionPipeline, MultiScaleTemplateMatcher, OcrError,
+    OcrRead, OcrRequest, PerceptionError, ScienceBearQuestDetector, Template, TemplateBinding,
+    TemplateDetector, TemplateMatch, TemplateMatcherConfig, TemporalConsensus, WindowsOcr,
+};
+pub use session::{ProcessId, RobloxSession, SessionTarget, WindowHandle};
+
+#[cfg(windows)]
+pub use windows_backend::{DiscoveredRobloxClient, discover_roblox_clients};

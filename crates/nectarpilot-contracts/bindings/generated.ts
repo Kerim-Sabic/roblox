@@ -11,11 +11,22 @@ export type Command = { type: "start"; payload: { mode: StartMode } } | { type: 
  * Internal desktop-to-daemon lifecycle request. It performs the same
  * fail-safe input release as an emergency stop before process exit.
  */
-{ type: "shutdown_daemon" } | { type: "get_snapshot" } | { type: "save_profile"; payload: { profile: Profile } } | { type: "delete_profile" } | { type: "export_profile" } | { type: "acknowledge_attention" }
+{ type: "shutdown_daemon" } | { type: "get_snapshot" } | { type: "get_profiles" } | { type: "select_profile" } |
+/**
+ * Runs one manifest-pinned legacy `AutoHotkey` asset through the daemon's
+ * contained compatibility port. The daemon re-checks both this digest and
+ * the profile's stored hash-bound consent before process creation.
+ */
+{ type: "start_legacy"; payload: { script_id: string; approved_sha256: string } } | { type: "save_profile"; payload: { profile: Profile } } | { type: "delete_profile" } | { type: "export_profile" } | { type: "acknowledge_attention" }
 
 export type CommandEnvelope = { protocol_version: number; request_id: string; profile_id: string; command: Command }
 
-export type DaemonEvent = { type: "command_accepted"; payload: { request_id: string } } | { type: "command_rejected"; payload: { request_id: string; reason: string } } | { type: "state_changed"; payload: { previous: RunState; current: RunState; reason: string } } | { type: "action_completed"; payload: ActionResult } | { type: "reconnect_progress"; payload: ReconnectProgress } | { type: "log"; payload: { level: EventLevel; target: string; message: string; fields?: JsonValue } } | { type: "snapshot"; payload: RunSnapshot } | { type: "profile_saved"; payload: { profile_id: string } } | { type: "profile_deleted"; payload: { profile_id: string } } | { type: "profile_exported"; payload: { profile_id: string; json: string } } | { type: "safe_mode_entered"; payload: { crash_count: number; window_seconds: number } }
+export type DaemonEvent = { type: "command_accepted"; payload: { request_id: string } } | { type: "command_rejected"; payload: { request_id: string; reason: string } } | { type: "state_changed"; payload: { previous: RunState; current: RunState; reason: string } } | { type: "action_completed"; payload: ActionResult } | { type: "reconnect_progress"; payload: ReconnectProgress } | { type: "log"; payload: { level: EventLevel; target: string; message: string; fields?: JsonValue } } | { type: "snapshot"; payload: RunSnapshot } | { type: "profile_saved"; payload: { profile_id: string } } | { type: "profiles"; payload: { profiles: Profile[]; selected_profile_id: string } } | { type: "profile_selected"; payload: { profile_id: string } } | { type: "profile_deleted"; payload: { profile_id: string } } | { type: "profile_exported"; payload: { profile_id: string; json: string } } | { type: "safe_mode_entered"; payload: { crash_count: number; window_seconds: number } } |
+/**
+ * Final acknowledgement after input cleanup. The daemon flushes this
+ * event before a requested graceful process exit.
+ */
+{ type: "shutdown_ready"; payload: { request_id: string } }
 
 /**
  * A detector result that makes uncertainty impossible to confuse with a value.

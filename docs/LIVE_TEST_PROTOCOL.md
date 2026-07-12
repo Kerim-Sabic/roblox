@@ -26,3 +26,7 @@ Live automation starts only after the offline suite passes for the scenario bein
 - Record the scenario, build commit, profile digest, duration, result and any recovery action.
 
 The 24-hour and 72-hour gates begin only after all attended feature scenarios pass. A soak failure resets the corresponding gate after the defect is fixed.
+
+## Evidence monitor
+
+Use `scripts/start-soak.ps1` only after the attended scenarios above. Live mode requires the exact adopted `RobloxPlayerBeta` PID, a daemon database path, and `-AllowLiveInput`; it refuses any profile that enables purchases, donations, trades, Discord, valuable-item budgets, shrine, stickers, or Auto-Jelly. It rechecks that daemon-owned profile at every heartbeat. Do not treat a fixture-only run as a release soak.

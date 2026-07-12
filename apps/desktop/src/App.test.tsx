@@ -92,6 +92,25 @@ describe("NectarPilot desktop", () => {
     expect(trustButton).toBeEnabled();
   });
 
+  it("offers the contained compatibility run only after exact-digest trust", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Ready when you are" });
+
+    await user.click(screen.getByRole("button", { name: "Extensions" }));
+    await user.click(screen.getByRole("button", { name: /Review & trust/ }));
+    await user.click(
+      screen.getByRole("checkbox", { name: /I reviewed these capabilities/ }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Trust exact digest" }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Run contained script" }),
+    ).toBeEnabled();
+  });
+
   it("shows the versioned Science Bear planner instead of pretending quest OCR is ready", async () => {
     const user = userEvent.setup();
     render(<App />);

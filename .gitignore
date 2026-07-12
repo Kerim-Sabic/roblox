@@ -61,6 +61,7 @@ apps/desktop/src-tauri/binaries/*
 /.nectarpilot
 /diagnostics
 /soak-results
+/artifacts
 
 # Test output
 lib-cov

@@ -1,3 +1,5 @@
+mod legacy_service;
+
 use std::{
     env,
     error::Error,
@@ -17,6 +19,10 @@ use nectarpilot_core::{
 use tokio::sync::broadcast;
 use tracing_subscriber::{EnvFilter, fmt::writer::MakeWriterExt};
 use uuid::Uuid;
+
+use legacy_service::LegacyCompatibilityService;
+#[cfg(windows)]
+use nectarpilot_platform::discover_roblox_clients;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -93,6 +99,14 @@ fn initialize_engine(
         );
     }
     let engine = AutomationEngine::new(backend, Arc::clone(&store))?;
+    match LegacyCompatibilityService::from_environment() {
+        Ok(service) => engine.install_legacy_port(Arc::new(service)),
+        Err(error) => {
+            // Normal native diagnostics remain available. StartLegacy will fail
+            // closed until the exact packaged compatibility assets are present.
+            tracing::warn!(%error, "legacy compatibility port is unavailable");
+        }
+    }
 
     if store
         .runtime_value("daemon_clean_shutdown")?
@@ -120,8 +134,11 @@ async fn serve_stdio(database: &Path, allow_mock_automation: bool) -> Result<(),
                     let shutdown_requested = matches!(&command.command, Command::ShutdownDaemon);
                     // Rejections are sent as structured events, so a bad command
                     // does not terminate the daemon transport.
-                    let _ = engine.handle_command(command).await;
-                    if shutdown_requested {
+                    let handled = engine.handle_command(command).await;
+                    if shutdown_requested && handled.is_ok() {
+                        while let Ok(event) = events.try_recv() {
+                            event_sender.send(&event).await?;
+                        }
                         break;
                     }
                 }
@@ -179,8 +196,11 @@ async fn serve_pipe(database: &Path, allow_mock_automation: bool) -> Result<(), 
                 command = commands.next() => match command {
                     Ok(Some(command)) => {
                         let shutdown_requested = matches!(&command.command, Command::ShutdownDaemon);
-                        let _ = engine.handle_command(command).await;
-                        if shutdown_requested {
+                        let handled = engine.handle_command(command).await;
+                        if shutdown_requested && handled.is_ok() {
+                            while let Ok(event) = events.try_recv() {
+                                event_sender.send(&event).await?;
+                            }
                             break 'server;
                         }
                     }
@@ -284,9 +304,39 @@ fn doctor(database: &Path) -> Result<(), Box<dyn Error>> {
             "profiles": profiles.len(),
             "protocol_version": nectarpilot_contracts::PROTOCOL_VERSION,
             "pipe": NamedPipeSpec::for_current_environment().path,
+            "roblox_clients": doctor_roblox_clients(),
         }))?
     );
     Ok(())
+}
+
+#[cfg(windows)]
+fn doctor_roblox_clients() -> serde_json::Value {
+    match discover_roblox_clients() {
+        Ok(clients) => serde_json::Value::Array(
+            clients
+                .into_iter()
+                .map(|client| {
+                    let window = client.window;
+                    serde_json::json!({
+                        "pid": client.pid.get(),
+                        "window_found": window.is_some(),
+                        "foreground": window.is_some_and(|snapshot| snapshot.is_foreground),
+                        "minimized": window.is_some_and(|snapshot| snapshot.geometry.minimized),
+                        "client_width": window.map(|snapshot| snapshot.geometry.client.width),
+                        "client_height": window.map(|snapshot| snapshot.geometry.client.height),
+                        "dpi": window.map(|snapshot| snapshot.geometry.dpi),
+                    })
+                })
+                .collect(),
+        ),
+        Err(error) => serde_json::json!({ "error": error.to_string() }),
+    }
+}
+
+#[cfg(not(windows))]
+fn doctor_roblox_clients() -> serde_json::Value {
+    serde_json::json!({ "error": "Roblox discovery is supported only on Windows" })
 }
 
 fn print_pipe_spec() {

@@ -26,3 +26,5 @@ Required groups before beta:
 - UI-only DPI snapshots at 100%, 125%, 150% and 200%.
 
 The fixture suite must assert that an unknown field or quest objective never becomes an actionable route.
+
+`parity-index.json` is the machine-checked inventory for all 28 parity scenarios. It deliberately starts as `contract_only`: it describes the exact redacted captures, supported sizes/DPI values, detector vocabulary, regression assertion, and attended live scenario needed for each capability. CI checks that no scenario or legacy asset class is omitted. A release workflow additionally runs `verify-parity-fixtures.ps1 -RequireCaptured`, which rejects every contract-only item until reviewed captures replace it.

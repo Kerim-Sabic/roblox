@@ -14,6 +14,14 @@ pub struct ChildJob {
 }
 
 #[cfg(windows)]
+// SAFETY: A Windows job-object handle is a kernel object with no thread
+// affinity. `ChildJob` owns it exclusively, exposes only `&mut self`
+// termination, and closes it exactly once in Drop. Moving that exclusive owner
+// between Tokio worker threads is therefore safe and is required for the
+// contained legacy runner's cancellation future to remain Send.
+unsafe impl Send for ChildJob {}
+
+#[cfg(windows)]
 impl ChildJob {
     pub fn assign(child: &Child) -> Result<Self, JobError> {
         use std::ffi::c_void;
