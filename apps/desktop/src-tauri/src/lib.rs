@@ -210,6 +210,15 @@ async fn import_secret(
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn scan_quests(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+) -> Result<(), String> {
+    bridge.scan_quests(profile_id).await
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
 async fn get_run_history(
     bridge: tauri::State<'_, Arc<DaemonBridge>>,
     profile_id: Uuid,
@@ -250,6 +259,7 @@ pub fn run() {
             start_legacy_session,
             inspect_legacy,
             import_secret,
+            scan_quests,
             get_run_history
         ])
         .build(tauri::generate_context!())

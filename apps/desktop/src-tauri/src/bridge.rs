@@ -13,7 +13,8 @@ use std::{
 use chrono::Utc;
 use nectarpilot_contracts::{
     Command, CommandEnvelope, DaemonEvent, DiscordPermissions, EventEnvelope, FeatureFlags,
-    FieldRotation, PROTOCOL_VERSION, Profile, RunSnapshot, RunState, ValuableItemBudgets,
+    FieldRotation, LegacyInspection, PROTOCOL_VERSION, Profile, QuestScanResult, RunRecord,
+    RunSnapshot, RunState, StatsSample, ValuableItemBudgets,
 };
 use nectarpilot_core::transport::NamedPipeSpec;
 use serde::{Deserialize, Serialize};
@@ -186,6 +187,10 @@ struct BridgeCache {
     profiles: BTreeMap<Uuid, Profile>,
     timeline: VecDeque<TimelineProjection>,
     logs: VecDeque<LogProjection>,
+    stats: Option<StatsSample>,
+    run_history: Vec<RunRecord>,
+    legacy_inspection: Option<LegacyInspection>,
+    quest_scan: Option<QuestScanResult>,
     updated_at: Option<chrono::DateTime<Utc>>,
 }
 
@@ -575,6 +580,14 @@ impl DaemonBridge {
         Ok(())
     }
 
+    /// One bounded advisory quest-log scan; the daemon answers with a
+    /// `quest_scan` event that lands in the dashboard snapshot.
+    pub async fn scan_quests(&self, profile_id: Uuid) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(profile_id, Command::ScanQuests))
+            .await?;
+        Ok(())
+    }
+
     pub async fn get_run_history(&self, profile_id: Uuid) -> Result<(), String> {
         self.dispatch(CommandEnvelope::new(profile_id, Command::GetRunHistory))
             .await?;
@@ -611,6 +624,9 @@ impl DaemonBridge {
                         .await;
                     let _ = self
                         .send_untracked(CommandEnvelope::new(Uuid::nil(), Command::GetProfiles))
+                        .await;
+                    let _ = self
+                        .send_untracked(CommandEnvelope::new(Uuid::nil(), Command::GetRunHistory))
                         .await;
 
                     let mut refresh = tokio::time::interval_at(
@@ -750,7 +766,13 @@ impl DaemonBridge {
                 if let Ok(mut cache) = self.cache.write() {
                     cache.run = Some(snapshot.clone());
                     if !profile_id.is_nil() {
+                        let profile_changed = cache
+                            .selected_profile_id
+                            .is_some_and(|current| current != profile_id);
                         cache.selected_profile_id = Some(profile_id);
+                        if profile_changed {
+                            clear_profile_scoped_projections(&mut cache);
+                        }
                     }
                 }
                 let profile_loaded = self
@@ -791,8 +813,14 @@ impl DaemonBridge {
                     .cache
                     .write()
                     .map_err(|_| "daemon cache lock poisoned".to_owned())?;
+                let profile_changed = cache
+                    .selected_profile_id
+                    .is_some_and(|current| current != *selected_profile_id);
                 cache.profiles = mapped_profiles;
                 cache.selected_profile_id = Some(*selected_profile_id);
+                if profile_changed {
+                    clear_profile_scoped_projections(&mut cache);
+                }
                 if let Some(snapshot) = cache.run.as_mut() {
                     snapshot.profile_id = *selected_profile_id;
                 }
@@ -806,11 +834,15 @@ impl DaemonBridge {
                 if !cache.profiles.contains_key(profile_id) {
                     return Err("daemon selected an unknown profile".to_owned());
                 }
+                let profile_changed = cache.selected_profile_id != Some(*profile_id);
                 cache.selected_profile_id = Some(*profile_id);
+                if profile_changed {
+                    clear_profile_scoped_projections(&mut cache);
+                }
                 if let Some(snapshot) = cache.run.as_mut() {
                     snapshot.profile_id = *profile_id;
                 }
-                None
+                Some(CommandEnvelope::new(*profile_id, Command::GetRunHistory))
             }
             DaemonEvent::ProfileExported { profile_id, json } => {
                 let profile: Profile = serde_json::from_str(json)
@@ -839,6 +871,51 @@ impl DaemonBridge {
                     let _ = waiter.send(());
                 }
                 None
+            }
+            DaemonEvent::StatsSample(sample) => {
+                if let Ok(mut cache) = self.cache.write() {
+                    cache.stats = Some(sample.clone());
+                }
+                None
+            }
+            DaemonEvent::RunHistory {
+                profile_id,
+                entries,
+            } => {
+                if entries
+                    .iter()
+                    .any(|record| record.profile_id != *profile_id)
+                {
+                    return Err("daemon returned cross-profile run history".to_owned());
+                }
+                if let Ok(mut cache) = self.cache.write()
+                    && cache.selected_profile_id == Some(*profile_id)
+                {
+                    cache.run_history.clone_from(entries);
+                }
+                None
+            }
+            DaemonEvent::LegacyInspection(inspection) => {
+                if let Ok(mut cache) = self.cache.write() {
+                    cache.legacy_inspection = Some(inspection.clone());
+                }
+                None
+            }
+            DaemonEvent::QuestScan(result) => {
+                if let Ok(mut cache) = self.cache.write() {
+                    cache.quest_scan = Some(result.clone());
+                }
+                None
+            }
+            // Refresh the active profile's history whenever a run settles.
+            DaemonEvent::StateChanged { current, .. } if should_refresh_run_history(*current) => {
+                let profile_id = self
+                    .cache
+                    .read()
+                    .ok()
+                    .and_then(|cache| cache.selected_profile_id)
+                    .unwrap_or_else(Uuid::nil);
+                Some(CommandEnvelope::new(profile_id, Command::GetRunHistory))
             }
             _ => None,
         };
@@ -906,6 +983,23 @@ impl DaemonBridge {
                 title: "Safe mode entered".to_owned(),
                 detail: format!("{crash_count} daemon crashes were recorded in ten minutes"),
                 tone: "danger",
+            }),
+            DaemonEvent::SessionProgress(progress) => Some(TimelineProjection {
+                id: format!("event-{}", envelope.sequence),
+                timestamp: envelope.timestamp,
+                title: format!(
+                    "Session cycle {}/{} step {}/{}",
+                    progress.cycle, progress.max_cycles, progress.step_index, progress.step_count
+                ),
+                detail: progress.description.clone(),
+                tone: "info",
+            }),
+            DaemonEvent::SecretStored { name } => Some(TimelineProjection {
+                id: format!("event-{}", envelope.sequence),
+                timestamp: envelope.timestamp,
+                title: "Secret stored".to_owned(),
+                detail: format!("{name} was sealed into the encrypted daemon store"),
+                tone: "success",
             }),
             _ => None,
         };
@@ -1052,7 +1146,35 @@ impl DaemonBridge {
                     "status": catalog_status,
                 }
             ],
-            "metrics": [],
+            "metrics": project_stats_metrics(cache.stats.as_ref()),
+            "runHistory": cache.run_history.iter()
+                .filter(|record| record.profile_id == profile_id)
+                .map(|record| json!({
+                "runId": record.run_id.to_string(),
+                "profileId": record.profile_id.to_string(),
+                "kind": record.kind,
+                "startedAt": record.started_at.to_rfc3339(),
+                "finishedAt": record.finished_at.to_rfc3339(),
+                "finalState": record.final_state,
+                "summary": record.summary,
+                "stepsSucceeded": record.steps_succeeded,
+                "stepsFailed": record.steps_failed,
+            })).collect::<Vec<_>>(),
+            "legacyInspection": cache.legacy_inspection.as_ref().map(|inspection| json!({
+                "scriptId": inspection.script_id,
+                "sha256": inspection.sha256,
+                "bytes": inspection.bytes,
+                "harnessPreview": inspection.harness_preview,
+            })),
+            "questScan": cache.quest_scan.as_ref().map(|scan| json!({
+                "scannedAt": scan.scanned_at.to_rfc3339(),
+                "giver": scan.giver,
+                "questId": scan.quest_id,
+                "questName": scan.quest_name,
+                "barsComplete": scan.bars_complete,
+                "recommendedFields": scan.recommended_fields,
+                "notes": scan.notes,
+            })),
             "timeline": cache.timeline.iter().collect::<Vec<_>>(),
             "queue": active_task.map_or_else(Vec::<Value>::new, |task| vec![json!({
                 "id": "active-daemon-task",
@@ -1716,9 +1838,77 @@ fn unavailable_dashboard(reason: &str) -> Value {
         "onboardingComplete": false,
         "safeMode": false,
         "session": { "connected": false, "processName": Value::Null, "pid": Value::Null, "windowTitle": Value::Null, "resolution": Value::Null, "dpi": Value::Null, "foreground": false, "calibration": Value::Null },
-        "readiness": [], "metrics": [], "timeline": [], "queue": [], "features": [], "extensions": [], "logs": [],
+        "readiness": [], "metrics": [], "runHistory": [], "legacyInspection": Value::Null, "questScan": Value::Null,
+        "timeline": [], "queue": [], "features": [], "extensions": [], "logs": [],
         "updatedAt": Utc::now(),
     })
+}
+
+fn clear_profile_scoped_projections(cache: &mut BridgeCache) {
+    cache.run_history.clear();
+    cache.legacy_inspection = None;
+    cache.quest_scan = None;
+}
+
+const fn should_refresh_run_history(state: RunState) -> bool {
+    matches!(
+        state,
+        RunState::Idle | RunState::Faulted | RunState::NeedsAttention
+    )
+}
+
+/// Projects the latest passive stats sample into dashboard stat tiles.
+/// Unconfident readings surface as em-dashes rather than stale or guessed
+/// numbers.
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "rates and minutes are clamped non-negative and bounded far below u64"
+)]
+fn project_stats_metrics(stats: Option<&StatsSample>) -> Vec<Value> {
+    let Some(sample) = stats else {
+        return Vec::new();
+    };
+    let honey = sample
+        .honey
+        .map_or_else(|| "—".to_owned(), format_grouped_number);
+    let rate = sample.honey_per_hour.map_or_else(
+        || "—".to_owned(),
+        |value| format!("{}/h", format_grouped_number(value.round().max(0.0) as u64)),
+    );
+    let minutes = sample.session_minutes.round().max(0.0) as u64;
+    vec![
+        json!({
+            "id": "honey",
+            "label": "Honey (HUD)",
+            "value": honey,
+            "tone": "gold",
+        }),
+        json!({
+            "id": "honey-rate",
+            "label": "Honey per hour",
+            "value": rate,
+            "tone": "green",
+        }),
+        json!({
+            "id": "session-minutes",
+            "label": "Stats session",
+            "value": format!("{}h {:02}m", minutes / 60, minutes % 60),
+            "tone": "blue",
+        }),
+    ]
+}
+
+fn format_grouped_number(value: u64) -> String {
+    let digits = value.to_string();
+    let mut grouped = String::with_capacity(digits.len() + digits.len() / 3);
+    for (index, character) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index).is_multiple_of(3) {
+            grouped.push(',');
+        }
+        grouped.push(character);
+    }
+    grouped
 }
 
 fn unavailable_profile(profile_id: Uuid) -> Value {
@@ -2193,7 +2383,8 @@ mod tests {
     use super::{
         AssetVerification, LegacyAssetInventory, LegacyEntryStatus, TrustedAssetLayout,
         budget_summary, legacy_catalog, project_extensions, project_profile, run_state_label,
-        safe_ui_settings, verify_autohotkey_runtime, verify_catalog_entry,
+        safe_ui_settings, should_refresh_run_history, verify_autohotkey_runtime,
+        verify_catalog_entry,
     };
 
     #[test]
@@ -2227,6 +2418,25 @@ mod tests {
             run_state_label(nectarpilot_contracts::RunState::NeedsAttention),
             "NeedsAttention"
         );
+    }
+
+    #[test]
+    fn every_settled_state_refreshes_run_history() {
+        assert!(should_refresh_run_history(
+            nectarpilot_contracts::RunState::Idle
+        ));
+        assert!(should_refresh_run_history(
+            nectarpilot_contracts::RunState::Faulted
+        ));
+        assert!(should_refresh_run_history(
+            nectarpilot_contracts::RunState::NeedsAttention
+        ));
+        assert!(!should_refresh_run_history(
+            nectarpilot_contracts::RunState::Running
+        ));
+        assert!(!should_refresh_run_history(
+            nectarpilot_contracts::RunState::Paused
+        ));
     }
 
     #[test]

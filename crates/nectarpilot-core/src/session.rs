@@ -28,6 +28,8 @@ pub enum SessionStepKind {
     Travel,
     Gather,
     ResetConvert,
+    /// An allowlisted cooldown-scheduled clock, dispenser, or booster route.
+    Collect,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -58,6 +60,8 @@ pub enum SessionPlanError {
     InvalidGatherDuration { field: String, seconds: u32 },
     #[error("asset {0} is not hash-trusted in this profile; review it on the Extensions page")]
     NotTrusted(String),
+    #[error("collect target {0:?} is not an approved clock, dispenser, or booster route")]
+    InvalidCollectTarget(String),
     #[error("session limits are out of bounds: {0}")]
     InvalidLimits(&'static str),
     #[error("a session cycle may contain at most {MAX_STEPS_PER_CYCLE} steps")]
@@ -152,6 +156,97 @@ pub fn build_session_plan(profile: &Profile) -> Result<Vec<SessionStep>, Session
     Ok(steps)
 }
 
+/// A cooldown-gated collect step plus its persistence key.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CollectStep {
+    pub step: SessionStep,
+    /// Runtime-state key holding the RFC3339 time of the last successful run.
+    pub last_run_key: String,
+    pub cooldown_minutes: u32,
+}
+
+/// Builds cooldown-scheduled steps for the explicitly approved clock,
+/// dispenser, and field-booster routes from the imported manifest. Valuable
+/// or state-changing `gtc-*` routes are deliberately not selectable here.
+/// Due-ness is evaluated by the engine at cycle boundaries so a collect run
+/// never interrupts gathering mid-pattern.
+pub fn build_collect_steps(profile: &Profile) -> Result<Vec<CollectStep>, SessionPlanError> {
+    let mut steps = Vec::new();
+    for task in &profile.automation.collect {
+        let route = collect_route(&task.target)
+            .ok_or_else(|| SessionPlanError::InvalidCollectTarget(task.target.clone()))?;
+        if !(5..=10_080).contains(&task.cooldown_minutes) {
+            return Err(SessionPlanError::InvalidLimits(
+                "collect cooldown must be 5..=10080 minutes",
+            ));
+        }
+        let route_id = format!("legacy:route:paths/{}", route.file_name);
+        let sha = trusted_digest(profile, &route_id)
+            .ok_or_else(|| SessionPlanError::NotTrusted(route_id.clone()))?;
+        steps.push(CollectStep {
+            step: SessionStep {
+                kind: SessionStepKind::Collect,
+                script_id: route_id,
+                approved_sha256: sha,
+                repetitions: 1,
+                gather_seconds: None,
+                description: format!(
+                    "Collect {} (every {} min)",
+                    task.target, task.cooldown_minutes
+                ),
+            },
+            last_run_key: format!(
+                "profile:{}:collect_last_run:{}",
+                profile.id, route.runtime_key
+            ),
+            cooldown_minutes: task.cooldown_minutes,
+        });
+    }
+    if steps.len() > MAX_STEPS_PER_CYCLE {
+        return Err(SessionPlanError::TooManySteps);
+    }
+    Ok(steps)
+}
+
+#[derive(Clone, Copy)]
+struct ApprovedCollectRoute {
+    /// Exact, case-sensitive file name from `assets/routes/_legacy-manifest.yaml`.
+    file_name: &'static str,
+    /// Stable lowercase identifier used only inside this profile's runtime key.
+    runtime_key: &'static str,
+}
+
+/// Maps case-insensitive profile input onto exact manifest casing. This is an
+/// allowlist, not a general `gtc-<slug>` constructor: shrine, sticker, blender,
+/// honeystorm, pass, memory-match, and seasonal routes can never enter the
+/// scheduled collection path through this function.
+fn collect_route(target: &str) -> Option<ApprovedCollectRoute> {
+    let route = match asset_slug(target).as_str() {
+        "clock" => ("gtc-clock.ahk", "clock"),
+        "blueberrydis" | "blueberrydispenser" => ("gtc-blueberrydis.ahk", "blueberry-dispenser"),
+        "coconutdis" | "coconutdispenser" => ("gtc-coconutdis.ahk", "coconut-dispenser"),
+        "gluedis" | "gluedispenser" => ("gtc-gluedis.ahk", "glue-dispenser"),
+        "honeydis" | "honeydispenser" => ("gtc-honeydis.ahk", "honey-dispenser"),
+        "royaljellydis" | "royaljellydispenser" => {
+            ("gtc-royaljellydis.ahk", "royal-jelly-dispenser")
+        }
+        "strawberrydis" | "strawberrydispenser" => {
+            ("gtc-strawberrydis.ahk", "strawberry-dispenser")
+        }
+        "treatdis" | "treatdispenser" => ("gtc-treatdis.ahk", "treat-dispenser"),
+        "blue" | "bluebooster" | "bluefieldbooster" => ("gtb-blue.ahk", "blue-booster"),
+        "red" | "redbooster" | "redfieldbooster" => ("gtb-red.ahk", "red-booster"),
+        "mountain" | "mountainbooster" | "mountaintopbooster" => {
+            ("gtb-mountain.ahk", "mountain-booster")
+        }
+        _ => return None,
+    };
+    Some(ApprovedCollectRoute {
+        file_name: route.0,
+        runtime_key: route.1,
+    })
+}
+
 fn trusted_digest(profile: &Profile, asset_id: &str) -> Option<String> {
     profile.trusted_extensions.get(asset_id).cloned()
 }
@@ -227,6 +322,93 @@ mod tests {
         profile.automation.rotations[0].pattern = "snake".into();
         let plan = build_session_plan(&profile).expect("plan");
         assert_eq!(plan[1].script_id, "legacy:pattern:patterns/Snake.ahk");
+    }
+
+    #[test]
+    fn collect_steps_are_profile_scoped_trusted_and_bounded() {
+        let mut profile = profile_with_rotation();
+        profile.automation.collect = vec![nectarpilot_contracts::CollectTask {
+            target: "Clock".into(),
+            cooldown_minutes: 240,
+        }];
+        // Untrusted route blocks the whole plan.
+        assert!(matches!(
+            build_collect_steps(&profile),
+            Err(SessionPlanError::NotTrusted(id)) if id.contains("gtc-clock")
+        ));
+
+        profile
+            .trusted_extensions
+            .insert("legacy:route:paths/gtc-clock.ahk".into(), "c".repeat(64));
+        let steps = build_collect_steps(&profile).expect("trusted collect plan");
+        assert_eq!(steps.len(), 1);
+        assert_eq!(steps[0].step.kind, SessionStepKind::Collect);
+        assert_eq!(steps[0].step.script_id, "legacy:route:paths/gtc-clock.ahk");
+        assert_eq!(
+            steps[0].last_run_key,
+            format!("profile:{}:collect_last_run:clock", profile.id)
+        );
+
+        let mut other_profile = profile.clone();
+        other_profile.id = uuid::Uuid::now_v7();
+        let other_steps = build_collect_steps(&other_profile).expect("other profile plan");
+        assert_ne!(steps[0].last_run_key, other_steps[0].last_run_key);
+
+        profile.automation.collect[0].cooldown_minutes = 1;
+        assert!(matches!(
+            build_collect_steps(&profile),
+            Err(SessionPlanError::InvalidLimits(_))
+        ));
+    }
+
+    #[test]
+    fn collect_allowlist_uses_exact_manifest_casing_and_rejects_valuable_routes() {
+        let manifest = include_str!("../../../assets/routes/_legacy-manifest.yaml");
+        for target in [
+            "clock",
+            "blueberrydis",
+            "coconutdis",
+            "gluedis",
+            "honeydis",
+            "royaljellydis",
+            "strawberrydis",
+            "treatdis",
+            "blue",
+            "red",
+            "mountain",
+        ] {
+            let route = collect_route(target).expect("approved fixture target");
+            assert!(
+                manifest.contains(&format!("legacy_source: paths/{}", route.file_name)),
+                "approved route {} must exist with exact casing in the manifest",
+                route.file_name
+            );
+        }
+
+        let mut profile = profile_with_rotation();
+        profile.automation.collect = vec![nectarpilot_contracts::CollectTask {
+            target: "BLUE Field Booster".into(),
+            cooldown_minutes: 60,
+        }];
+        profile
+            .trusted_extensions
+            .insert("legacy:route:paths/gtb-blue.ahk".into(), "c".repeat(64));
+
+        let steps = build_collect_steps(&profile).expect("case-safe booster mapping");
+        assert_eq!(steps[0].step.script_id, "legacy:route:paths/gtb-blue.ahk");
+        assert!(steps[0].step.description.contains("BLUE Field Booster"));
+
+        for blocked in ["WindShrine", "stickerPrinter", "blender", "honeystorm"] {
+            profile.automation.collect[0].target = blocked.into();
+            profile.trusted_extensions.insert(
+                format!("legacy:route:paths/gtc-{blocked}.ahk"),
+                "d".repeat(64),
+            );
+            assert!(matches!(
+                build_collect_steps(&profile),
+                Err(SessionPlanError::InvalidCollectTarget(target)) if target == blocked
+            ));
+        }
     }
 
     #[test]

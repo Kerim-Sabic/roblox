@@ -292,13 +292,33 @@ impl SqliteStore {
     }
 
     pub fn list_run_records(&self, limit: u32) -> Result<Vec<RunRecord>, StoreError> {
+        self.query_run_records(None, limit)
+    }
+
+    /// Returns only records owned by `profile_id`, applying the limit after
+    /// profile selection so another profile can never crowd out its history.
+    pub fn list_run_records_for_profile(
+        &self,
+        profile_id: Uuid,
+        limit: u32,
+    ) -> Result<Vec<RunRecord>, StoreError> {
+        self.query_run_records(Some(profile_id), limit)
+    }
+
+    fn query_run_records(
+        &self,
+        profile_id: Option<Uuid>,
+        limit: u32,
+    ) -> Result<Vec<RunRecord>, StoreError> {
         let connection = self.connection.lock();
         let mut statement = connection.prepare(
             "SELECT run_id, profile_id, kind, started_at, finished_at, final_state,\
              summary, steps_succeeded, steps_failed
-             FROM run_history ORDER BY finished_at DESC LIMIT ?1",
+             FROM run_history WHERE (?1 IS NULL OR profile_id = ?1)
+             ORDER BY finished_at DESC LIMIT ?2",
         )?;
-        let rows = statement.query_map([limit.min(500)], |row| {
+        let profile_parameter = profile_id.map(|id| id.to_string());
+        let rows = statement.query_map(params![profile_parameter, limit.min(500)], |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -529,6 +549,7 @@ fn event_type_name(event: &EventEnvelope) -> &'static str {
         DaemonEvent::SecretStored { .. } => "secret_stored",
         DaemonEvent::RunHistory { .. } => "run_history",
         DaemonEvent::StatsSample(_) => "stats_sample",
+        DaemonEvent::QuestScan(_) => "quest_scan",
     }
 }
 
@@ -556,6 +577,8 @@ pub enum StoreError {
     UnsupportedProfileVersion { received: u32, supported: u32 },
     #[error("invalid profile: {0}")]
     InvalidProfile(String),
+    #[error("runtime state key {key:?} contains an invalid {expected} value")]
+    InvalidRuntimeValue { key: String, expected: &'static str },
     #[error("profile {0} was not found")]
     ProfileNotFound(Uuid),
     #[error("invalid encrypted secret: {0}")]

@@ -107,6 +107,59 @@ export function GatherPage({
         </div>
       </section>
 
+      <section className="panel privacy-panel">
+        <header className="panel-header">
+          <div>
+            <span className="eyebrow">Quest advisor</span>
+            <h2>
+              {snapshot.questScan?.questName ??
+                snapshot.questScan?.giver ??
+                "No quest scanned yet"}
+            </h2>
+          </div>
+          <button
+            className="button button-secondary button-small"
+            disabled={pendingAction !== null || snapshot.runState !== "Idle"}
+            title="Uses the client-anchored legacy menu position, verifies that the quest log opened, reads confident giver/title/objective evidence, then closes it. Requires Roblox foregrounded."
+            onClick={() => void actions.scanQuests()}
+          >
+            Scan quests
+          </button>
+        </header>
+        {snapshot.questScan ? (
+          <div>
+            {snapshot.questScan.barsComplete.length > 0 && (
+              <p>
+                Objectives:{" "}
+                {snapshot.questScan.barsComplete
+                  .map((complete) => (complete ? "✓" : "…"))
+                  .join(" ")}
+              </p>
+            )}
+            {snapshot.questScan.recommendedFields.length > 0 && (
+              <p>
+                Recommended fields:{" "}
+                <strong>
+                  {snapshot.questScan.recommendedFields.join(", ")}
+                </strong>
+              </p>
+            )}
+            {snapshot.questScan.notes.map((note) => (
+              <p key={note}>· {note}</p>
+            ))}
+            <p>
+              Scanned {new Date(snapshot.questScan.scannedAt).toLocaleString()}
+              . Advisory only — uncertain readings are reported, never guessed.
+            </p>
+          </div>
+        ) : (
+          <p>
+            Scan reads the quest log with the validated legacy templates and
+            recommends fields that advance incomplete objectives.
+          </p>
+        )}
+      </section>
+
       <section className="gather-layout">
         <article className="panel rotation-panel">
           <header className="panel-header">

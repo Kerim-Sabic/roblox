@@ -61,6 +61,10 @@ pub struct AutomationConfig {
     /// Manual planter reminders; the desktop shows countdowns and due badges.
     /// Nothing is placed or collected automatically from these entries.
     pub planters: Vec<ManualPlanterTimer>,
+    /// Allowlisted clock, free-dispenser, and field-booster routes run at cycle
+    /// boundaries during orchestrated sessions. Valuable and state-changing
+    /// routes are never accepted by this scheduler.
+    pub collect: Vec<CollectTask>,
 }
 
 impl Default for AutomationConfig {
@@ -73,8 +77,18 @@ impl Default for AutomationConfig {
             hotkeys: HotkeyConfig::default(),
             session: SessionConfig::default(),
             planters: Vec::new(),
+            collect: Vec::new(),
         }
     }
+}
+
+/// One cooldown-scheduled allowlisted target, e.g. `clock` every 240 minutes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct CollectTask {
+    /// Approved clock/dispenser/booster name. The engine maps this onto an
+    /// exact manifest route and requires that route's trusted digest.
+    pub target: String,
+    pub cooldown_minutes: u32,
 }
 
 /// Bounds for one orchestrated legacy gather session.

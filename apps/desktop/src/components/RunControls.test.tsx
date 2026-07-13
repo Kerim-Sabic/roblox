@@ -16,6 +16,7 @@ const actions: NectarActions = {
   runLegacyExtension: vi.fn(),
   startLegacySession: vi.fn(),
   inspectLegacy: vi.fn(),
+  scanQuests: vi.fn(),
   setCompactMode: vi.fn(),
 };
 

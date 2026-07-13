@@ -1,4 +1,5 @@
 mod legacy_service;
+mod quest_scan;
 
 use std::{
     env,
@@ -108,6 +109,9 @@ fn initialize_engine(
         }
     }
     engine.install_secret_port(Arc::new(DpapiSecretPort));
+    engine.install_quest_scan_port(Arc::new(quest_scan::QuestScanService::new(
+        legacy_service::compatibility_root(),
+    )));
     engine.set_report_directory(default_data_directory().join("reports"));
 
     if store

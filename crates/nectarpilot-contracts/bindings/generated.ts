@@ -9,7 +9,23 @@ export type AutomationConfig = { gathering_enabled: boolean; reconnect_enabled: 
  * Manual planter reminders; the desktop shows countdowns and due badges.
  * Nothing is placed or collected automatically from these entries.
  */
-planters: ManualPlanterTimer[] }
+planters: ManualPlanterTimer[];
+/**
+ * Allowlisted clock, free-dispenser, and field-booster routes run at cycle
+ * boundaries during orchestrated sessions. Valuable and state-changing
+ * routes are never accepted by this scheduler.
+ */
+collect: CollectTask[] }
+
+/**
+ * One cooldown-scheduled allowlisted target, e.g. `clock` every 240 minutes.
+ */
+export type CollectTask = {
+/**
+ * Approved clock/dispenser/booster name. The engine maps this onto an
+ * exact manifest route and requires that route's trusted digest.
+ */
+target: string; cooldown_minutes: number }
 
 export type Command = { type: "start"; payload: { mode: StartMode } } | { type: "pause" } | { type: "resume" } | { type: "stop" } | { type: "emergency_stop" } |
 /**
@@ -39,7 +55,14 @@ export type Command = { type: "start"; payload: { mode: StartMode } } | { type: 
  * Stores one named secret (for example the private-server link) in the
  * daemon's encrypted store. The value never appears in events or logs.
  */
-{ type: "import_secret"; payload: { name: string; value: string } } | { type: "get_run_history" } | { type: "save_profile"; payload: { profile: Profile } } | { type: "delete_profile" } | { type: "export_profile" } | { type: "acknowledge_attention" }
+{ type: "import_secret"; payload: { name: string; value: string } } | { type: "get_run_history" } |
+/**
+ * Opens the in-game quest log from the client-anchored legacy menu
+ * position, verifies the open state, reads the giver icon, title, and
+ * objective bars, then closes it. Requires an idle engine and one
+ * foreground Roblox client; uncertain readings are reported, not guessed.
+ */
+{ type: "scan_quests" } | { type: "save_profile"; payload: { profile: Profile } } | { type: "delete_profile" } | { type: "export_profile" } | { type: "acknowledge_attention" }
 
 export type CommandEnvelope = { protocol_version: number; request_id: string; profile_id: string; command: Command }
 
@@ -60,12 +83,22 @@ export type DaemonEvent = { type: "command_accepted"; payload: { request_id: str
 /**
  * Confirmation that a named secret was stored; the value is never echoed.
  */
-{ type: "secret_stored"; payload: { name: string } } | { type: "run_history"; payload: { entries: RunRecord[] } } |
+{ type: "secret_stored"; payload: { name: string } } | { type: "run_history"; payload: {
+/**
+ * Profile whose records were requested. This lets consumers reject
+ * delayed responses after the active profile changes.
+ */
+profile_id: string; entries: RunRecord[] } } |
 /**
  * Passive screen-derived statistics. `None` fields mean the reading was
  * not confident; they are never guessed.
  */
-{ type: "stats_sample"; payload: StatsSample }
+{ type: "stats_sample"; payload: StatsSample } |
+/**
+ * Advisory quest-log reading. Absent fields mean that part of the log
+ * could not be read confidently.
+ */
+{ type: "quest_scan"; payload: QuestScanResult }
 
 /**
  * A detector result that makes uncertainty impossible to confuse with a value.
@@ -132,6 +165,24 @@ export type Profile = { id: string; schema_version: number; name: string; create
  * Extension identifier to the exact SHA-256 hash the user approved.
  */
 trusted_extensions?: Partial<{ [key in string]: string }>; legacy?: LegacySnapshot | null }
+
+export type QuestScanResult = { scanned_at: string;
+/**
+ * Detected quest giver (`snake_case`), when the icon match was confident.
+ */
+giver: string | null; quest_id: string | null; quest_name: string | null;
+/**
+ * Objective bar completion in screen order; empty when unreadable.
+ */
+bars_complete: boolean[];
+/**
+ * Fields that advance the detected quest's incomplete objectives.
+ */
+recommended_fields: string[];
+/**
+ * Human-readable uncertainty and held-work explanations.
+ */
+notes: string[] }
 
 export type ReconnectProgress = { attempt: number; maximum_attempts: number; elapsed_seconds: number; deadline_seconds: number }
 

@@ -46,6 +46,16 @@ jobs:
       - name: Validate all generated legacy harness variants
         run: cargo run -p nectarpilot-legacy --bin validate_legacy_assets
 
+      - name: Verify generated contracts and asset manifests are current
+        run: |
+          cargo run -p nectarpilot-contracts --bin export-typescript
+          cargo run -p nectarpilot-legacy --bin convert_legacy_assets
+          $generatedChanges = git status --porcelain --untracked-files=all -- assets crates/nectarpilot-contracts/bindings/generated.ts
+          if ($generatedChanges) {
+            $generatedChanges
+            throw "Generated files are stale or untracked. Regenerate and commit them."
+          }
+
       - name: Build unsigned per-user NSIS installer
         run: pnpm bundle:unsigned
 

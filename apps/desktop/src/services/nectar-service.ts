@@ -39,6 +39,7 @@ export interface NectarService {
     maxMinutes: number,
   ): Promise<void>;
   inspectLegacy(profileId: string, scriptId: string): Promise<void>;
+  scanQuests(profileId: string): Promise<void>;
   setCompactMode(compact: boolean): Promise<void>;
 }
 
@@ -145,6 +146,10 @@ export class TauriNectarService implements NectarService {
 
   inspectLegacy(profileId: string, scriptId: string) {
     return invoke<void>("inspect_legacy", { profileId, scriptId });
+  }
+
+  scanQuests(profileId: string) {
+    return invoke<void>("scan_quests", { profileId });
   }
 
   async setCompactMode(compact: boolean): Promise<void> {
@@ -260,6 +265,11 @@ export class MockNectarService implements NectarService {
     if (!this.snapshot.profiles.some((profile) => profile.id === profileId))
       return;
     this.snapshot.activeProfileId = profileId;
+    this.snapshot.runHistory = (this.snapshot.runHistory ?? []).filter(
+      (record) => record.profileId === profileId,
+    );
+    this.snapshot.legacyInspection = null;
+    this.snapshot.questScan = null;
     const profile = this.snapshot.profiles.find(
       (item) => item.id === profileId,
     ) as Profile;
@@ -349,6 +359,15 @@ export class MockNectarService implements NectarService {
       "Legacy session requested",
       `Field rotation loop for up to ${maxCycles} cycles / ${maxMinutes} minutes`,
       "warning",
+    );
+    this.publish();
+  }
+
+  async scanQuests(): Promise<void> {
+    this.addTimeline(
+      "Quest scan requested",
+      "The daemon opens the quest log with verified clicks and reads it",
+      "info",
     );
     this.publish();
   }

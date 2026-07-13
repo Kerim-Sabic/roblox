@@ -11,12 +11,12 @@ pub mod bindings;
 
 pub use detection::{Detection, DetectionEvidence, NormalizedRegion};
 pub use profile::{
-    AutomationConfig, DiscordConfig, DiscordPermissions, FeatureFlags, FieldRotation, HotkeyConfig,
-    LegacySnapshot, LegacySource, ManualPlanterTimer, PROFILE_SCHEMA_VERSION, Profile,
-    SafetyConfig, SessionConfig, ValuableItemBudgets,
+    AutomationConfig, CollectTask, DiscordConfig, DiscordPermissions, FeatureFlags, FieldRotation,
+    HotkeyConfig, LegacySnapshot, LegacySource, ManualPlanterTimer, PROFILE_SCHEMA_VERSION,
+    Profile, SafetyConfig, SessionConfig, ValuableItemBudgets,
 };
 pub use protocol::{
     ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, EventEnvelope, EventLevel,
-    LegacyInspection, PROTOCOL_VERSION, ReconnectProgress, RunRecord, RunSnapshot, RunState,
-    SessionProgress, StartMode, StatsSample,
+    LegacyInspection, PROTOCOL_VERSION, QuestScanResult, ReconnectProgress, RunRecord, RunSnapshot,
+    RunState, SessionProgress, StartMode, StatsSample,
 };

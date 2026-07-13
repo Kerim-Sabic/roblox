@@ -189,12 +189,17 @@ pub struct LegacyCompatibilityService {
     adopted_client: Arc<Mutex<Option<AdoptedRobloxClient>>>,
 }
 
+/// The resolved legacy compatibility root: `NECTARPILOT_LEGACY_ROOT` when
+/// explicitly set, otherwise the compile-time repository root — never the
+/// process working directory.
+pub fn compatibility_root() -> PathBuf {
+    env::var_os(LEGACY_ROOT_ENV).map_or_else(safe_development_root, PathBuf::from)
+}
+
 impl LegacyCompatibilityService {
-    /// Builds the service from `NECTARPILOT_LEGACY_ROOT` when it is explicitly set.
-    /// Otherwise it uses the compile-time repository root, never the process CWD.
+    /// Builds the service from [`compatibility_root`].
     pub fn from_environment() -> Result<Self, LegacyCompatibilityError> {
-        let root = env::var_os(LEGACY_ROOT_ENV).map_or_else(safe_development_root, PathBuf::from);
-        Self::from_root(root)
+        Self::from_root(compatibility_root())
     }
 
     /// Builds the service from a packaged resource root or a controlled test root.
