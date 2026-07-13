@@ -285,9 +285,7 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         if let Some(serialized) = store.runtime_value("daemon_crash_timestamps")? {
             let timestamps: Vec<DateTime<Utc>> =
                 serde_json::from_str(&serialized).unwrap_or_default();
-            for timestamp in timestamps {
-                crash_guard.record(timestamp);
-            }
+            crash_guard.restore(timestamps, Utc::now());
         }
         let safe_mode = crash_guard.is_tripped()
             || store
@@ -406,7 +404,15 @@ impl<B: AutomationBackend> AutomationEngine<B> {
             Command::Pause => self.pause().await,
             Command::Resume => self.resume().await,
             Command::Stop => self.stop(false).await,
-            Command::EmergencyStop | Command::ShutdownDaemon => self.stop(true).await,
+            Command::EmergencyStop => self.stop(true).await,
+            Command::ShutdownDaemon => {
+                self.stop(true).await?;
+                // Persist this before emitting ShutdownReady. The desktop may
+                // close immediately after it receives the event, but that is
+                // an intentional lifecycle transition rather than a crash.
+                self.inner.store.mark_daemon_clean_shutdown()?;
+                Ok(())
+            }
             Command::GetSnapshot => {
                 self.emit(DaemonEvent::Snapshot(self.snapshot()));
                 Ok(())
@@ -506,12 +512,9 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                         command: "acknowledge_attention",
                     });
                 }
-                self.inner.safe_mode.store(false, Ordering::SeqCst);
-                self.inner.store.set_runtime_value("safe_mode", "false")?;
                 self.inner.crash_guard.lock().clear();
-                self.inner
-                    .store
-                    .set_runtime_value("daemon_crash_timestamps", "[]")?;
+                self.inner.store.set_crash_guard_state(false, &[])?;
+                self.inner.safe_mode.store(false, Ordering::SeqCst);
                 if state == RunState::Idle {
                     self.emit(DaemonEvent::Snapshot(self.snapshot()));
                 } else {
@@ -1651,13 +1654,12 @@ impl<B: AutomationBackend> AutomationEngine<B> {
             let tripped = guard.record(occurred_at);
             (tripped, guard.recent_count(), guard.timestamps())
         };
-        self.inner.store.set_runtime_value(
-            "daemon_crash_timestamps",
-            &serde_json::to_string(&timestamps)?,
-        )?;
+        let safe_mode = self.inner.safe_mode.load(Ordering::SeqCst) || tripped;
+        self.inner
+            .store
+            .set_crash_guard_state(safe_mode, &timestamps)?;
+        self.inner.safe_mode.store(safe_mode, Ordering::SeqCst);
         if tripped {
-            self.inner.safe_mode.store(true, Ordering::SeqCst);
-            self.inner.store.set_runtime_value("safe_mode", "true")?;
             self.emit(DaemonEvent::SafeModeEntered {
                 crash_count: count,
                 window_seconds: 10 * 60,

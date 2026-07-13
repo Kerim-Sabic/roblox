@@ -31,6 +31,14 @@ const safeSettings: AutomationSettings = {
     pesticide: true,
     tacky: true,
   },
+  movement: {
+    walkSpeed: 28,
+    hiveSlot: 6,
+    hiveBees: 50,
+    keyDelay: 20,
+    cannonTravel: true,
+    buffCorrectedWalk: true,
+  },
   gathering: {
     enabled: true,
     fields: ["Pine Tree Forest", "Mushroom Field", "Clover Field"],

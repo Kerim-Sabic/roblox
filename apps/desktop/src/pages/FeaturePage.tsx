@@ -7,7 +7,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { NectarActions } from "../hooks/useNectarPilot";
 import {
   activeProfile,
@@ -43,11 +43,14 @@ export function FeaturePage({
   const [enabled, setEnabled] = useState<Record<string, boolean>>(() => ({
     ...profile.settings.features,
   }));
-
-  useEffect(
-    () => setEnabled({ ...profile.settings.features }),
-    [profile.id, profile.settings.features],
+  const persistedFeatures = useMemo(
+    () => JSON.stringify(profile.settings.features),
+    [profile.settings.features],
   );
+
+  useEffect(() => {
+    setEnabled(JSON.parse(persistedFeatures) as Record<string, boolean>);
+  }, [persistedFeatures, profile.id]);
 
   const toggle = async (feature: FeatureCard) => {
     const next = {
@@ -55,7 +58,11 @@ export function FeaturePage({
       [feature.id]: !(enabled[feature.id] ?? feature.enabled),
     };
     setEnabled(next);
-    await actions.saveSettings({ ...profile.settings, features: next });
+    if (
+      !(await actions.saveSettings({ ...profile.settings, features: next }))
+    ) {
+      setEnabled(enabled);
+    }
   };
 
   return (

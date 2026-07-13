@@ -6,10 +6,10 @@ import { createMockSnapshot } from "../services/seed";
 import type { AutomationSettings } from "../types/contracts";
 import { GatherPage } from "./GatherPage";
 
-function createActions() {
+function createActions(saveResult = true) {
   let savedSettings: AutomationSettings | undefined;
   const pageActions: NectarActions = {
-    refreshSession: vi.fn().mockResolvedValue(undefined),
+    refreshSession: vi.fn().mockResolvedValue(true),
     start: vi.fn().mockResolvedValue(undefined),
     acknowledgeAttention: vi.fn().mockResolvedValue(undefined),
     pause: vi.fn().mockResolvedValue(undefined),
@@ -18,9 +18,10 @@ function createActions() {
     selectProfile: vi.fn().mockResolvedValue(undefined),
     saveSettings: async (settings) => {
       savedSettings = settings;
+      return saveResult;
     },
     completeOnboarding: vi.fn().mockResolvedValue(undefined),
-    trustExtension: vi.fn().mockResolvedValue(undefined),
+    trustExtension: vi.fn().mockResolvedValue(true),
     runLegacyExtension: vi.fn().mockResolvedValue(undefined),
     startLegacySession: vi.fn().mockResolvedValue(undefined),
     inspectLegacy: vi.fn().mockResolvedValue(undefined),
@@ -67,5 +68,61 @@ describe("GatherPage", () => {
     expect(saved?.gathering.enabled).toBe(true);
     expect(saved?.gathering.fields).toEqual(["Pine Tree Forest"]);
     expect(saved?.gathering.pattern).toBe("e_lol");
+  });
+
+  it("keeps a rejected plan dirty instead of pretending it was saved", async () => {
+    const user = userEvent.setup();
+    const snapshot = createMockSnapshot();
+    const actionState = createActions(false);
+
+    render(
+      <GatherPage
+        snapshot={snapshot}
+        actions={actionState.pageActions}
+        pendingAction={null}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Remove Pine Tree Forest" }),
+    );
+    expect(screen.getByText("Unsaved changes")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Apply plan" }));
+
+    expect(actionState.savedSettings()).toBeDefined();
+    expect(screen.getByText("Unsaved changes")).toBeVisible();
+  });
+
+  it("requires an explicit replacement for an unsupported imported pattern", async () => {
+    const user = userEvent.setup();
+    const snapshot = createMockSnapshot();
+    snapshot.profiles[0]!.settings.gathering = {
+      ...snapshot.profiles[0]!.settings.gathering,
+      enabled: true,
+      fields: ["Pine Tree Forest"],
+      pattern: "Stationary",
+    };
+    const actionState = createActions();
+
+    render(
+      <GatherPage
+        snapshot={snapshot}
+        actions={actionState.pageActions}
+        pendingAction={null}
+      />,
+    );
+
+    expect(
+      screen.getByText("Replace the imported pattern before starting"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Start saved plan" }),
+    ).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Use e_lol instead" }));
+    expect(screen.getByText("Unsaved changes")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Apply plan" }));
+
+    expect(actionState.savedSettings()?.gathering.pattern).toBe("e_lol");
   });
 });

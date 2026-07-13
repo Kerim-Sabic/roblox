@@ -175,10 +175,9 @@ export function GatherPage({
     () => JSON.stringify(draft.gathering) !== savedSignature,
     [draft.gathering, savedSignature],
   );
-  const selectedPattern =
-    patternOptions.find(
-      (pattern) => pattern.value === draft.gathering.pattern,
-    ) ?? patternOptions[0]!;
+  const selectedPattern = patternOptions.find(
+    (pattern) => pattern.value === draft.gathering.pattern,
+  );
   const fieldAssets = draft.gathering.fields.map((field) => ({
     field,
     meta: fieldFor(field),
@@ -188,10 +187,12 @@ export function GatherPage({
     for (const { field, meta } of fieldAssets) {
       if (meta) assets.set(`legacy:route:paths/${meta.route}`, field);
     }
-    assets.set(
-      `legacy:pattern:patterns/${selectedPattern.file}`,
-      `${selectedPattern.label} pattern`,
-    );
+    if (selectedPattern) {
+      assets.set(
+        `legacy:pattern:patterns/${selectedPattern.file}`,
+        `${selectedPattern.label} pattern`,
+      );
+    }
     return assets;
   }, [fieldAssets, selectedPattern]);
   const extensionById = useMemo(
@@ -206,6 +207,9 @@ export function GatherPage({
     return extension?.trust === "review_required";
   });
   const unavailableAssets = [
+    ...(!selectedPattern
+      ? [`Unsupported gathering pattern: ${draft.gathering.pattern}`]
+      : []),
     ...fieldAssets
       .filter(({ meta }) => !meta)
       .map(({ field }) => `Unknown field: ${field}`),
@@ -258,22 +262,22 @@ export function GatherPage({
   };
 
   const apply = async () => {
-    await actions.saveSettings({
-      ...draft,
-      gathering: { ...draft.gathering, pattern: selectedPattern.value },
-    });
-    setSavedSignature(
-      JSON.stringify({ ...draft.gathering, pattern: selectedPattern.value }),
-    );
+    if (await actions.saveSettings(draft)) {
+      setSavedSignature(JSON.stringify(draft.gathering));
+    }
   };
 
   const trustSelectedAssets = async () => {
     for (const [id] of missingTrust) {
       const extension = extensionById.get(id);
-      if (extension)
-        await actions.trustExtension(extension.id, extension.digest);
+      if (
+        extension &&
+        !(await actions.trustExtension(extension.id, extension.digest))
+      ) {
+        return;
+      }
     }
-    await actions.refreshSession();
+    if (!(await actions.refreshSession())) return;
     setTrustDialogOpen(false);
     setTrustConfirmed(false);
   };
@@ -336,16 +340,23 @@ export function GatherPage({
           </div>
         </div>
       )}
-      {dirty && selectedPattern.value !== draft.gathering.pattern && (
+      {!selectedPattern && (
         <div className="inline-alert inline-alert-warning" role="status">
           <ShieldCheck size={18} />
           <div>
-            <strong>Choose a legacy bridge pattern</strong>
+            <strong>Replace the imported pattern before starting</strong>
             <span>
-              The old Stationary preview cannot be run by the compatibility
-              worker; e_lol is selected until you apply a supported pattern.
+              {draft.gathering.pattern} is not executable through the legacy
+              bridge. Choose a supported pattern and apply the plan; NectarPilot
+              will never silently substitute a movement pattern.
             </span>
           </div>
+          <button
+            className="button button-secondary"
+            onClick={() => updateGathering({ pattern: "e_lol" })}
+          >
+            Use e_lol instead
+          </button>
         </div>
       )}
       {!dirty && missingTrust.length > 0 && unavailableAssets.length === 0 && (
@@ -551,11 +562,16 @@ export function GatherPage({
               <label className="field-label">
                 Gathering pattern
                 <select
-                  value={selectedPattern.value}
+                  value={draft.gathering.pattern}
                   onChange={(event) =>
                     updateGathering({ pattern: event.target.value })
                   }
                 >
+                  {!selectedPattern && (
+                    <option value={draft.gathering.pattern} disabled>
+                      Unsupported imported pattern — choose one below
+                    </option>
+                  )}
                   {patternOptions.map((pattern) => (
                     <option key={pattern.file} value={pattern.value}>
                       {pattern.label}

@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use nectarpilot_contracts::{EventEnvelope, PROFILE_SCHEMA_VERSION, Profile, RunRecord};
 use parking_lot::Mutex;
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, backup::Backup, params};
@@ -198,6 +198,38 @@ impl SqliteStore {
                 |row| row.get(0),
             )
             .optional()?)
+    }
+
+    /// Commits the two crash-loop values together. A restart must never see a
+    /// cleared timestamp list with a stale safe-mode bit (or the inverse).
+    pub fn set_crash_guard_state(
+        &self,
+        safe_mode: bool,
+        timestamps: &[DateTime<Utc>],
+    ) -> Result<(), StoreError> {
+        let timestamps = serde_json::to_string(timestamps)?;
+        let mut connection = self.connection.lock();
+        let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        for (key, value) in [
+            ("safe_mode", if safe_mode { "true" } else { "false" }),
+            ("daemon_crash_timestamps", timestamps.as_str()),
+        ] {
+            transaction.execute(
+                "INSERT INTO runtime_state (key, value) VALUES (?1, ?2)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                params![key, value],
+            )?;
+        }
+        transaction.commit()?;
+        backup_connection(&connection, &self.last_good_path)?;
+        Ok(())
+    }
+
+    /// Mark a daemon as clean as soon as it has accepted a graceful shutdown
+    /// and released input. This avoids classifying a desktop process that exits
+    /// immediately after `ShutdownReady` as a crash on its next launch.
+    pub fn mark_daemon_clean_shutdown(&self) -> Result<(), StoreError> {
+        self.set_runtime_value("daemon_clean_shutdown", "true")
     }
 
     /// Stores only ciphertext produced by the platform secret protector.

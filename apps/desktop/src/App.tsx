@@ -67,6 +67,16 @@ export default function App({ service }: { service?: NectarService }) {
     return () => window.removeEventListener("keydown", hotkeys);
   }, [controller.actions, controller.snapshot]);
 
+  if (!controller.snapshot && controller.error) {
+    return (
+      <main className="loading-screen" role="alert">
+        <AlertTriangle size={30} />
+        <strong>Desktop runtime required</strong>
+        <span>{controller.error}</span>
+      </main>
+    );
+  }
+
   if (controller.loading || !controller.snapshot) {
     return (
       <main className="loading-screen">
