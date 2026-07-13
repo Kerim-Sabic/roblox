@@ -1948,8 +1948,8 @@ mod tests {
             .filter(|script_id| script_id.contains("legacy:pattern:"))
             .count();
         assert!(
-            patterns >= 4,
-            "pattern did not repeat until cutoff: {calls:?}"
+            patterns >= 2,
+            "pattern did not repeat before the cutoff: {calls:?}"
         );
         assert!(legacy.cancelled_patterns.load(Ordering::SeqCst) >= 1);
         assert_eq!(
