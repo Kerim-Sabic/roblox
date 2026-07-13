@@ -1,0 +1,87 @@
+[workspace]
+members = [
+  "apps/daemon",
+  "apps/desktop/src-tauri",
+  "crates/nectarpilot-contracts",
+  "crates/nectarpilot-core",
+  "crates/nectarpilot-legacy",
+  "crates/nectarpilot-platform",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+authors = ["NectarPilot contributors", "Natro Team contributors"]
+repository = "https://github.com/Kerim-Sabic/roblox"
+rust-version = "1.90"
+
+[workspace.dependencies]
+anyhow = "1.0"
+async-trait = "0.1"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+directories = "6.0"
+futures = "0.3"
+hex = "0.4"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+imageproc = { version = "0.27", default-features = false, features = ["rayon"] }
+parking_lot = "0.12"
+rand = "0.9"
+regex = "1.11"
+rusqlite = { version = "0.37", features = ["bundled", "chrono", "serde_json", "uuid"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+sha2 = "0.10"
+specta = { version = "2.0.0-rc.22", features = ["chrono", "derive", "uuid"] }
+tempfile = "3.20"
+thiserror = "2.0"
+tokio = { version = "1.47", features = ["full"] }
+tokio-util = "0.7"
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+uuid = { version = "1.18", features = ["serde", "v4", "v7"] }
+windows = { version = "0.61", features = [
+  "Foundation",
+  "Globalization",
+  "Graphics_Imaging",
+  "Media_Ocr",
+  "Storage_Streams",
+  "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_Security",
+  "Win32_Security_Cryptography",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Console",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_JobObjects",
+  "Win32_System_Pipes",
+  "Win32_System_ProcessStatus",
+  "Win32_System_Threading",
+  "Win32_System_WinRT",
+  "Win32_UI_HiDpi",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+] }
+zeroize = { version = "1.8", features = ["derive"] }
+
+[workspace.lints.rust]
+# Windows capture/input/job APIs require small, reviewed unsafe boundaries in the
+# platform crate. All other crates deny unsafe code at their crate roots.
+unsafe_code = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

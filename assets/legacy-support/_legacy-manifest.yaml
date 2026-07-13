@@ -1,0 +1,29 @@
+format_version: 1
+entries:
+- path: lib/Gdip_All.ahk
+  sha256: a86df75ff48e3b30e82d337bf6526fcac60dca06e8824c613b57de3f40f0fc48
+  bytes: 142278
+- path: lib/Gdip_ImageSearch.ahk
+  sha256: 8599ae14a2707019aff35e1dc7ea7e2576729ed239e858335f5d6106b9c419ca
+  bytes: 34099
+- path: lib/HyperSleep.ahk
+  sha256: f93a7c2fa622aeb09c16cd2dec9980927c8767f81eb0fd004583aaf7f20bfa49
+  bytes: 484
+- path: lib/Roblox.ahk
+  sha256: 981b2f69c8b577a6ac35e6d1ab657e50793b9b4d83642f77960057ddf91c9b2b
+  bytes: 2720
+- path: lib/Walk.ahk
+  sha256: b63c8445ba681612147d06630d17787f2c4a57ffa2b585d1aa330a2f1e98a89f
+  bytes: 8321
+- path: nm_image_assets/convert/bitmaps.ahk
+  sha256: efaa1af42b8ddfa111a594dc501e42dad53d4ab091ebce3cae0029ee9de2d73c
+  bytes: 507
+- path: nm_image_assets/general/bitmaps.ahk
+  sha256: e44c7b4e9414ebe4c6c2054beb46aab2460f16458632a4613ae0c4e0879d323f
+  bytes: 146720
+- path: nm_image_assets/offset/bitmaps.ahk
+  sha256: dedf416000fcb63ddf30a3a876cde1fd1df6cd68f6ea6d93cd25cce85d958fca
+  bytes: 1682
+- path: nm_image_assets/reset/bitmaps.ahk
+  sha256: c3c664d526acc048cf6460ffdc1eebc71b73ebd14402ae9221dd84c829a4cf9a
+  bytes: 4677

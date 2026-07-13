@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "knowledge_version": "natro-v1.1.2-import completion-bar semantics (amount 1 = quest bar complete)",
+  "source_url": "https://github.com/NatroTeam/NatroMacro",
+  "quests": [
+    {
+      "sequence": 1,
+      "id": "bucko-abilities",
+      "giver": "gifted_bucko_bee",
+      "name": "Abilities",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 2,
+      "id": "bucko-bamboo",
+      "giver": "gifted_bucko_bee",
+      "name": "Bamboo",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        }
+      ]
+    },
+    {
+      "sequence": 3,
+      "id": "bucko-bombard",
+      "giver": "gifted_bucko_bee",
+      "name": "Bombard",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "rhino_beetle",
+          "count": 1
+        },
+        {
+          "type": "token",
+          "token": "ant_pass",
+          "amount": 1
+        },
+        {
+          "type": "token",
+          "token": "ant_pass",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 4,
+      "id": "bucko-booster",
+      "giver": "gifted_bucko_bee",
+      "name": "Booster",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "token",
+          "token": "blue_field_boost",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 5,
+      "id": "bucko-clean-up",
+      "giver": "gifted_bucko_bee",
+      "name": "Clean-Up",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        }
+      ]
+    },
+    {
+      "sequence": 6,
+      "id": "bucko-extraction",
+      "giver": "gifted_bucko_bee",
+      "name": "Extraction",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "clover"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "cactus"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pumpkin"
+        }
+      ]
+    },
+    {
+      "sequence": 7,
+      "id": "bucko-flowers",
+      "giver": "gifted_bucko_bee",
+      "name": "Flowers",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        }
+      ]
+    },
+    {
+      "sequence": 8,
+      "id": "bucko-goo",
+      "giver": "gifted_bucko_bee",
+      "name": "Goo",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "sequence": 9,
+      "id": "bucko-medley",
+      "giver": "gifted_bucko_bee",
+      "name": "Medley",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        }
+      ]
+    },
+    {
+      "sequence": 10,
+      "id": "bucko-picnic",
+      "giver": "gifted_bucko_bee",
+      "name": "Picnic",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        },
+        {
+          "type": "feed_item",
+          "item": "blueberry",
+          "count": 1
+        },
+        {
+          "type": "token",
+          "token": "ant_pass",
+          "amount": 1
+        },
+        {
+          "type": "token",
+          "token": "ant_pass",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 11,
+      "id": "bucko-pine-trees",
+      "giver": "gifted_bucko_bee",
+      "name": "Pine Trees",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        }
+      ]
+    },
+    {
+      "sequence": 12,
+      "id": "bucko-pollen",
+      "giver": "gifted_bucko_bee",
+      "name": "Pollen",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "sequence": 13,
+      "id": "bucko-scavenge",
+      "giver": "gifted_bucko_bee",
+      "name": "Scavenge",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        },
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "sequence": 14,
+      "id": "bucko-skirmish",
+      "giver": "gifted_bucko_bee",
+      "name": "Skirmish",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "defeat",
+          "mob": "rhino_beetle",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 15,
+      "id": "bucko-tango",
+      "giver": "gifted_bucko_bee",
+      "name": "Tango",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        },
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "mantis",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 16,
+      "id": "bucko-tour",
+      "giver": "gifted_bucko_bee",
+      "name": "Tour",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        },
+        {
+          "type": "defeat",
+          "mob": "rhino_beetle",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "mantis",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 17,
+      "id": "bucko-petals",
+      "giver": "gifted_bucko_bee",
+      "name": "Petals",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "clover"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pineapple"
+        }
+      ]
+    }
+  ]
+}

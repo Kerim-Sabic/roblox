@@ -1,0 +1,70 @@
+# Git ignore
+# https://git-scm.com/docs/gitignore
+
+# Settings
+settings/*
+
+# Miscellaneous
+*~
+*#
+.DS_STORE
+Thumbs.db
+.netbeans
+nbproject
+.node_history
+
+# IDEs & Text Editors
+.idea
+.sublime-*
+.vscode
+.netbeans
+nbproject
+
+# Temporary files
+.tmp
+.temp
+*.temp.*
+.grunt
+.lock-wscript
+*-monitor-layout.txt
+
+# Logs
+/logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Dependencies
+node_modules
+
+# NectarPilot build output
+/target
+**/.check/
+/dist
+apps/desktop/dist
+apps/desktop/src-tauri/gen
+apps/desktop/src-tauri/binaries/*
+!apps/desktop/src-tauri/binaries/.gitkeep
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+
+# Local NectarPilot runtime data
+/.nectarpilot
+/diagnostics
+/soak-results
+/artifacts
+
+# Test output
+lib-cov
+/coverage
+/test/test-apps/*/dist
+MMScreenshots/*

@@ -1,0 +1,32 @@
+[package]
+name = "nectarpilot-platform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+chrono.workspace = true
+image.workspace = true
+nectarpilot-core = { path = "../nectarpilot-core", version = "=0.1.0" }
+nectarpilot-contracts = { path = "../nectarpilot-contracts", version = "=0.1.0" }
+regex.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+zeroize.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tempfile.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

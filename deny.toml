@@ -1,0 +1,35 @@
+[graph]
+# NectarPilot is a Windows 10/11 x64 product. Filtering the graph prevents
+# Linux-only GTK/WebKit packages from becoming false release blockers.
+targets = ["x86_64-pc-windows-msvc"]
+
+[advisories]
+version = 2
+yanked = "deny"
+# Fail on unmaintained crates we choose directly. Tauri currently carries a
+# few transitive no-safe-upgrade advisories; vulnerabilities remain denied.
+unmaintained = "workspace"
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "GPL-3.0-only",
+  "ISC",
+  "MIT",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Zlib",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "knowledge_version": "natro-v1.1.2-import completion-bar semantics (amount 1 = quest bar complete)",
+  "source_url": "https://github.com/NatroTeam/NatroMacro",
+  "quests": [
+    {
+      "sequence": 1,
+      "id": "black-just-white",
+      "giver": "black_bear",
+      "name": "Just White",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "white"
+        }
+      ]
+    },
+    {
+      "sequence": 2,
+      "id": "black-just-red",
+      "giver": "black_bear",
+      "name": "Just Red",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "sequence": 3,
+      "id": "black-just-blue",
+      "giver": "black_bear",
+      "name": "Just Blue",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "sequence": 4,
+      "id": "black-a-bit-of-both",
+      "giver": "black_bear",
+      "name": "A Bit Of Both",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        }
+      ]
+    },
+    {
+      "sequence": 5,
+      "id": "black-any-pollen",
+      "giver": "black_bear",
+      "name": "Any Pollen",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 6,
+      "id": "black-the-whole-lot",
+      "giver": "black_bear",
+      "name": "The Whole Lot",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "white"
+        }
+      ]
+    },
+    {
+      "sequence": 7,
+      "id": "black-between-the-bamboo",
+      "giver": "black_bear",
+      "name": "Between The Bamboo",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "blue"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        }
+      ]
+    },
+    {
+      "sequence": 8,
+      "id": "black-play-in-the-pumpkins",
+      "giver": "black_bear",
+      "name": "Play In The Pumpkins",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "white"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pumpkin"
+        }
+      ]
+    },
+    {
+      "sequence": 9,
+      "id": "black-plundering-pineapples",
+      "giver": "black_bear",
+      "name": "Plundering Pineapples",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pineapple"
+        }
+      ]
+    },
+    {
+      "sequence": 10,
+      "id": "black-stroll-in-the-strawberries",
+      "giver": "black_bear",
+      "name": "Stroll In The Strawberries",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        }
+      ]
+    },
+    {
+      "sequence": 11,
+      "id": "black-mid-level-mission",
+      "giver": "black_bear",
+      "name": "Mid-Level Mission",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "spider"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        }
+      ]
+    },
+    {
+      "sequence": 12,
+      "id": "black-blue-flower-bliss",
+      "giver": "black_bear",
+      "name": "Blue Flower Bliss",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        }
+      ]
+    },
+    {
+      "sequence": 13,
+      "id": "black-delve-into-dandelions",
+      "giver": "black_bear",
+      "name": "Delve Into Dandelions",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "dandelion"
+        }
+      ]
+    },
+    {
+      "sequence": 14,
+      "id": "black-fun-in-the-sunflowers",
+      "giver": "black_bear",
+      "name": "Fun In The Sunflowers",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "sunflower"
+        }
+      ]
+    },
+    {
+      "sequence": 15,
+      "id": "black-mission-for-mushrooms",
+      "giver": "black_bear",
+      "name": "Mission For Mushrooms",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        }
+      ]
+    },
+    {
+      "sequence": 16,
+      "id": "black-leisurely-lowlands",
+      "giver": "black_bear",
+      "name": "Leisurely Lowlands",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "sunflower"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "dandelion"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        }
+      ]
+    },
+    {
+      "sequence": 17,
+      "id": "black-triple-trek",
+      "giver": "black_bear",
+      "name": "Triple Trek",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mountain_top"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pepper"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "coconut"
+        }
+      ]
+    },
+    {
+      "sequence": 18,
+      "id": "black-pepper-patrol",
+      "giver": "black_bear",
+      "name": "Pepper Patrol",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pepper"
+        }
+      ]
+    }
+  ]
+}

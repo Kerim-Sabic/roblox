@@ -1,0 +1,121 @@
+name: Release artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Release channel
+        required: true
+        type: choice
+        options: [beta, stable]
+      tag:
+        description: Existing v-prefixed tag to package
+        required: true
+        type: string
+      soak_result:
+        description: Repository-relative signed-off soak result JSON
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.96.0
+
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level high
+      - run: ./scripts/verify-no-secrets.ps1
+      - run: ./scripts/verify-parity-fixtures.ps1 -RequireCaptured
+      - name: Enforce beta/stable release gate
+        env:
+          RELEASE_CHANNEL: ${{ inputs.channel }}
+          SOAK_RESULT: ${{ inputs.soak_result }}
+        run: ./scripts/verify-release-gate.ps1 -Channel $env:RELEASE_CHANNEL -SoakResult $env:SOAK_RESULT
+      - run: pnpm check
+      - run: pnpm lint
+      - run: pnpm test
+      - name: Generate SBOM and JavaScript license inventory
+        run: ./scripts/generate-sbom.ps1
+
+      - name: Build signed updater and NSIS installer
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ inputs.tag }}
+          releaseName: NectarPilot ${{ inputs.tag }} (${{ inputs.channel }})
+          releaseDraft: true
+          prerelease: ${{ inputs.channel == 'beta' }}
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+          args: ${{ inputs.channel == 'beta' && '--config src-tauri/tauri.beta.conf.json' || '' }}
+
+      - name: Refresh the public beta update channel
+        if: inputs.channel == 'beta'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          CHANNEL_TAG: beta
+        shell: pwsh
+        run: |
+          $channelExists = gh release view $env:CHANNEL_TAG --json id 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:CHANNEL_TAG --prerelease --title 'NectarPilot beta update channel' --notes 'Machine-managed signed updater manifest for the beta channel.'
+          }
+          $download = Join-Path $env:RUNNER_TEMP 'nectarpilot-beta-updater'
+          New-Item -ItemType Directory -Force -Path $download | Out-Null
+          gh release download $env:RELEASE_TAG -p latest.json -D $download
+          gh release upload $env:CHANNEL_TAG (Join-Path $download 'latest.json') --clobber
+
+      - name: Package portable ZIP and checksum
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/package-portable.ps1 -Version $env:RELEASE_TAG.TrimStart('v')
+
+      - name: Attach portable artifacts to the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release upload $env:RELEASE_TAG dist/*.zip dist/*.sha256 --clobber
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            target/release/bundle/nsis/*
+            dist/*.zip
+            dist/*.sha256
+
+      - name: Upload compliance inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: NectarPilot-${{ inputs.tag }}-compliance
+          path: |
+            dist/nectarpilot.cdx.json
+            dist/npm-licenses.json
+            THIRD_PARTY_NOTICES.md

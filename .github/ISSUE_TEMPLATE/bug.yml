@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible NectarPilot defect using redacted diagnostics.
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste Discord tokens, webhooks, private-server links, or unredacted screenshots. Export and review the local diagnostics bundle first.
+  - type: dropdown
+    id: duplicate
+    attributes:
+      label: Existing issue search
+      options:
+        - I searched and found no matching open issue
+        - I found a related issue and will link it below
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: NectarPilot version
+      placeholder: 0.1.0-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Area
+      options: [Startup, UI, Gathering, Travel, Reconnect, Activities, Combat, Quests, Planters, Boosts, Monitoring, Discord, Extensions, Update, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened?
+      description: Include the visible state, expected state, and whether emergency stop worked.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Windows version, Roblox client size, display scale, monitor count, profile mode
+    validations:
+      required: true
+  - type: checkboxes
+    id: diagnostics
+    attributes:
+      label: Privacy check
+      options:
+        - label: I reviewed every attachment and removed secrets and personal information.
+          required: true
