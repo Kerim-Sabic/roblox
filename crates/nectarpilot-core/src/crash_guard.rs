@@ -49,6 +49,13 @@ impl CrashLoopGuard {
     pub fn timestamps(&self) -> Vec<DateTime<Utc>> {
         self.crashes.iter().copied().collect()
     }
+
+    /// Clears the persisted crash window after an explicit user
+    /// acknowledgement. This is intentionally not automatic: a repeated
+    /// daemon failure still re-enters safe mode immediately.
+    pub fn clear(&mut self) {
+        self.crashes.clear();
+    }
 }
 
 #[cfg(test)]

@@ -13,9 +13,14 @@ use std::{
 use chrono::Utc;
 use nectarpilot_contracts::{
     Command, CommandEnvelope, DaemonEvent, DiscordPermissions, EventEnvelope, FeatureFlags,
-    FieldRotation, PROTOCOL_VERSION, Profile, RunSnapshot, RunState, ValuableItemBudgets,
+    FieldRotation, LegacyInspection, PROTOCOL_VERSION, Profile, QuestScanResult, RunRecord,
+    RunSnapshot, RunState, StatsSample, ValuableItemBudgets,
 };
-use nectarpilot_core::transport::NamedPipeSpec;
+use nectarpilot_core::{
+    build_session_plan, is_supported_legacy_field, is_supported_legacy_pattern,
+    transport::NamedPipeSpec,
+};
+use nectarpilot_legacy::{SupportCatalog, verify_support_files};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -29,7 +34,7 @@ use nectarpilot_core::transport::{
     CommandSender, connect_named_pipe, daemon_client, try_connect_named_pipe,
 };
 #[cfg(windows)]
-use nectarpilot_platform::discover_roblox_clients;
+use nectarpilot_platform::{bring_window_to_foreground, discover_roblox_clients};
 #[cfg(windows)]
 use tokio::{io::WriteHalf, net::windows::named_pipe::NamedPipeClient};
 
@@ -49,6 +54,8 @@ const RECONNECT_DELAYS: [Duration; 7] = [
 const MAX_PROJECTED_EVENTS: usize = 100;
 const ROUTE_MANIFEST: &str = include_str!("../../../../assets/routes/_legacy-manifest.yaml");
 const PATTERN_MANIFEST: &str = include_str!("../../../../assets/patterns/_legacy-manifest.yaml");
+const SUPPORT_MANIFEST: &str =
+    include_str!("../../../../assets/legacy-support/_legacy-manifest.yaml");
 const LEGACY_VERSION: &str = "1.1.2";
 const AUTOHOTKEY64_SHA256: &str =
     "37ff15a23a98f0a658298e21f1873ca896a05208810bf796f90ca212ee07c7b1";
@@ -186,6 +193,10 @@ struct BridgeCache {
     profiles: BTreeMap<Uuid, Profile>,
     timeline: VecDeque<TimelineProjection>,
     logs: VecDeque<LogProjection>,
+    stats: Option<StatsSample>,
+    run_history: Vec<RunRecord>,
+    legacy_inspection: Option<LegacyInspection>,
+    quest_scan: Option<QuestScanResult>,
     updated_at: Option<chrono::DateTime<Utc>>,
 }
 
@@ -518,6 +529,8 @@ impl DaemonBridge {
         if !trusted {
             return Err("trust this exact legacy script digest before running it".to_owned());
         }
+        #[cfg(windows)]
+        self.handoff_focus_to_roblox().await?;
         self.dispatch(CommandEnvelope::new(
             profile_id,
             Command::StartLegacy {
@@ -537,12 +550,46 @@ impl DaemonBridge {
         max_cycles: u32,
         max_minutes: u32,
     ) -> Result<(), String> {
+        #[cfg(windows)]
+        self.handoff_focus_to_roblox().await?;
         self.dispatch(CommandEnvelope::new(
             profile_id,
             Command::StartLegacySession {
                 max_cycles,
                 max_minutes,
             },
+        ))
+        .await?;
+        Ok(())
+    }
+
+    /// Starts the saved gather plan with its profile-owned bounds. This is the
+    /// only desktop Start/F1 path while normal native automation remains
+    /// intentionally unavailable. The `WebView` cannot choose an executable,
+    /// path, or unbounded runtime.
+    pub async fn start_configured_session(&self, profile_id: Uuid) -> Result<(), String> {
+        let profile = self.profile(profile_id)?;
+        if !profile.automation.gathering_enabled || profile.automation.rotations.is_empty() {
+            return Err(
+                "add at least one field to Gather, apply the plan, then trust its pinned route and pattern"
+                    .to_owned(),
+            );
+        }
+        self.start_legacy_session(
+            profile_id,
+            profile.automation.session.default_max_cycles,
+            profile.automation.session.default_max_minutes,
+        )
+        .await
+    }
+
+    /// Clears a fault or persisted crash-loop safe mode only after the user
+    /// explicitly asks from Diagnostics. The engine records the acknowledgement
+    /// and keeps all other start checks in force.
+    pub async fn acknowledge_attention(&self, profile_id: Uuid) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(
+            profile_id,
+            Command::AcknowledgeAttention,
         ))
         .await?;
         Ok(())
@@ -575,6 +622,16 @@ impl DaemonBridge {
         Ok(())
     }
 
+    /// One bounded advisory quest-log scan; the daemon answers with a
+    /// `quest_scan` event that lands in the dashboard snapshot.
+    pub async fn scan_quests(&self, profile_id: Uuid) -> Result<(), String> {
+        #[cfg(windows)]
+        self.handoff_focus_to_roblox().await?;
+        self.dispatch(CommandEnvelope::new(profile_id, Command::ScanQuests))
+            .await?;
+        Ok(())
+    }
+
     pub async fn get_run_history(&self, profile_id: Uuid) -> Result<(), String> {
         self.dispatch(CommandEnvelope::new(profile_id, Command::GetRunHistory))
             .await?;
@@ -597,6 +654,53 @@ impl DaemonBridge {
             .ok_or_else(|| format!("daemon profile {profile_id} is not available"))
     }
 
+    /// Performs the focus transfer in the desktop process immediately after a
+    /// user gesture, when Windows permits the foreground application to hand
+    /// off focus. The daemon repeats ownership/foreground checks before every
+    /// input-bearing step, so a failed or changed window remains fail-closed.
+    #[cfg(windows)]
+    async fn handoff_focus_to_roblox(&self) -> Result<(), String> {
+        let candidates = discover_roblox_clients()
+            .map_err(|error| format!("could not inspect Roblox windows: {error}"))?
+            .into_iter()
+            .filter_map(|candidate| candidate.window)
+            .filter(|window| !window.geometry.minimized)
+            .collect::<Vec<_>>();
+        let [window] = candidates.as_slice() else {
+            return Err(match candidates.len() {
+                0 => "Open one restored official Roblox client before starting the saved plan.".to_owned(),
+                _ => "More than one restored Roblox client is open. Close the extra client so NectarPilot can keep input scoped to one exact window.".to_owned(),
+            });
+        };
+
+        if !window.is_foreground && !bring_window_to_foreground(window.target.window) {
+            return Err(
+                "Windows did not allow NectarPilot to focus Roblox. Click the Roblox client once, then press F1 without interacting with another window."
+                    .to_owned(),
+            );
+        }
+
+        for _ in 0..10 {
+            let refreshed = discover_roblox_clients()
+                .map_err(|error| format!("could not recheck Roblox focus: {error}"))?
+                .into_iter()
+                .filter_map(|candidate| candidate.window)
+                .filter(|current| !current.geometry.minimized)
+                .collect::<Vec<_>>();
+            let foreground = matches!(refreshed.as_slice(), [current]
+                if current.target == window.target && current.is_foreground);
+            if foreground {
+                return Ok(());
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+
+        Err(
+            "Roblox did not become the foreground window. Click Roblox once and press F1 again; NectarPilot will not send input until the exact client is verified."
+                .to_owned(),
+        )
+    }
+
     #[cfg(windows)]
     async fn supervise(&self) {
         let mut reconnect_index = 0_usize;
@@ -611,6 +715,9 @@ impl DaemonBridge {
                         .await;
                     let _ = self
                         .send_untracked(CommandEnvelope::new(Uuid::nil(), Command::GetProfiles))
+                        .await;
+                    let _ = self
+                        .send_untracked(CommandEnvelope::new(Uuid::nil(), Command::GetRunHistory))
                         .await;
 
                     let mut refresh = tokio::time::interval_at(
@@ -750,7 +857,13 @@ impl DaemonBridge {
                 if let Ok(mut cache) = self.cache.write() {
                     cache.run = Some(snapshot.clone());
                     if !profile_id.is_nil() {
+                        let profile_changed = cache
+                            .selected_profile_id
+                            .is_some_and(|current| current != profile_id);
                         cache.selected_profile_id = Some(profile_id);
+                        if profile_changed {
+                            clear_profile_scoped_projections(&mut cache);
+                        }
                     }
                 }
                 let profile_loaded = self
@@ -791,8 +904,14 @@ impl DaemonBridge {
                     .cache
                     .write()
                     .map_err(|_| "daemon cache lock poisoned".to_owned())?;
+                let profile_changed = cache
+                    .selected_profile_id
+                    .is_some_and(|current| current != *selected_profile_id);
                 cache.profiles = mapped_profiles;
                 cache.selected_profile_id = Some(*selected_profile_id);
+                if profile_changed {
+                    clear_profile_scoped_projections(&mut cache);
+                }
                 if let Some(snapshot) = cache.run.as_mut() {
                     snapshot.profile_id = *selected_profile_id;
                 }
@@ -806,11 +925,15 @@ impl DaemonBridge {
                 if !cache.profiles.contains_key(profile_id) {
                     return Err("daemon selected an unknown profile".to_owned());
                 }
+                let profile_changed = cache.selected_profile_id != Some(*profile_id);
                 cache.selected_profile_id = Some(*profile_id);
+                if profile_changed {
+                    clear_profile_scoped_projections(&mut cache);
+                }
                 if let Some(snapshot) = cache.run.as_mut() {
                     snapshot.profile_id = *profile_id;
                 }
-                None
+                Some(CommandEnvelope::new(*profile_id, Command::GetRunHistory))
             }
             DaemonEvent::ProfileExported { profile_id, json } => {
                 let profile: Profile = serde_json::from_str(json)
@@ -839,6 +962,51 @@ impl DaemonBridge {
                     let _ = waiter.send(());
                 }
                 None
+            }
+            DaemonEvent::StatsSample(sample) => {
+                if let Ok(mut cache) = self.cache.write() {
+                    cache.stats = Some(sample.clone());
+                }
+                None
+            }
+            DaemonEvent::RunHistory {
+                profile_id,
+                entries,
+            } => {
+                if entries
+                    .iter()
+                    .any(|record| record.profile_id != *profile_id)
+                {
+                    return Err("daemon returned cross-profile run history".to_owned());
+                }
+                if let Ok(mut cache) = self.cache.write()
+                    && cache.selected_profile_id == Some(*profile_id)
+                {
+                    cache.run_history.clone_from(entries);
+                }
+                None
+            }
+            DaemonEvent::LegacyInspection(inspection) => {
+                if let Ok(mut cache) = self.cache.write() {
+                    cache.legacy_inspection = Some(inspection.clone());
+                }
+                None
+            }
+            DaemonEvent::QuestScan(result) => {
+                if let Ok(mut cache) = self.cache.write() {
+                    cache.quest_scan = Some(result.clone());
+                }
+                None
+            }
+            // Refresh the active profile's history whenever a run settles.
+            DaemonEvent::StateChanged { current, .. } if should_refresh_run_history(*current) => {
+                let profile_id = self
+                    .cache
+                    .read()
+                    .ok()
+                    .and_then(|cache| cache.selected_profile_id)
+                    .unwrap_or_else(Uuid::nil);
+                Some(CommandEnvelope::new(profile_id, Command::GetRunHistory))
             }
             _ => None,
         };
@@ -906,6 +1074,23 @@ impl DaemonBridge {
                 title: "Safe mode entered".to_owned(),
                 detail: format!("{crash_count} daemon crashes were recorded in ten minutes"),
                 tone: "danger",
+            }),
+            DaemonEvent::SessionProgress(progress) => Some(TimelineProjection {
+                id: format!("event-{}", envelope.sequence),
+                timestamp: envelope.timestamp,
+                title: format!(
+                    "Session cycle {}/{} step {}/{}",
+                    progress.cycle, progress.max_cycles, progress.step_index, progress.step_count
+                ),
+                detail: progress.description.clone(),
+                tone: "info",
+            }),
+            DaemonEvent::SecretStored { name } => Some(TimelineProjection {
+                id: format!("event-{}", envelope.sequence),
+                timestamp: envelope.timestamp,
+                title: "Secret stored".to_owned(),
+                detail: format!("{name} was sealed into the encrypted daemon store"),
+                tone: "success",
             }),
             _ => None,
         };
@@ -1004,6 +1189,24 @@ impl DaemonBridge {
                 Vec::new(),
             ),
         };
+        let (gather_status, gather_detail) = selected_profile.map_or_else(
+            || ("blocked", "Waiting for a daemon-owned profile".to_owned()),
+            |profile| {
+                if !profile.automation.gathering_enabled {
+                    return (
+                        "blocked",
+                        "Add a field and apply the saved gather plan before starting".to_owned(),
+                    );
+                }
+                match build_session_plan(profile) {
+                    Ok(steps) => (
+                        "ready",
+                        format!("{} verified gather/reset steps are ready", steps.len()),
+                    ),
+                    Err(error) => ("blocked", error.to_string()),
+                }
+            },
+        );
 
         json!({
             "runId": run_id,
@@ -1034,6 +1237,13 @@ impl DaemonBridge {
                     "status": roblox.status,
                 },
                 {
+                    "id": "gather-plan",
+                    "label": "Saved gather plan",
+                    "detail": gather_detail,
+                    "status": gather_status,
+                    "actionLabel": if gather_status == "ready" { Value::Null } else { json!("Configure") },
+                },
+                {
                     "id": "native-detectors",
                     "label": "Native route detectors",
                     "detail": "The input engine is installed, but normal runs stay blocked until reviewed field, hive, prompt, and combat detector assets are calibrated. Trusted legacy routes remain available through Extensions.",
@@ -1052,7 +1262,35 @@ impl DaemonBridge {
                     "status": catalog_status,
                 }
             ],
-            "metrics": [],
+            "metrics": project_stats_metrics(cache.stats.as_ref()),
+            "runHistory": cache.run_history.iter()
+                .filter(|record| record.profile_id == profile_id)
+                .map(|record| json!({
+                "runId": record.run_id.to_string(),
+                "profileId": record.profile_id.to_string(),
+                "kind": record.kind,
+                "startedAt": record.started_at.to_rfc3339(),
+                "finishedAt": record.finished_at.to_rfc3339(),
+                "finalState": record.final_state,
+                "summary": record.summary,
+                "stepsSucceeded": record.steps_succeeded,
+                "stepsFailed": record.steps_failed,
+            })).collect::<Vec<_>>(),
+            "legacyInspection": cache.legacy_inspection.as_ref().map(|inspection| json!({
+                "scriptId": inspection.script_id,
+                "sha256": inspection.sha256,
+                "bytes": inspection.bytes,
+                "harnessPreview": inspection.harness_preview,
+            })),
+            "questScan": cache.quest_scan.as_ref().map(|scan| json!({
+                "scannedAt": scan.scanned_at.to_rfc3339(),
+                "giver": scan.giver,
+                "questId": scan.quest_id,
+                "questName": scan.quest_name,
+                "barsComplete": scan.bars_complete,
+                "recommendedFields": scan.recommended_fields,
+                "notes": scan.notes,
+            })),
             "timeline": cache.timeline.iter().collect::<Vec<_>>(),
             "queue": active_task.map_or_else(Vec::<Value>::new, |task| vec![json!({
                 "id": "active-daemon-task",
@@ -1427,15 +1665,25 @@ fn verify_legacy_assets(
 ) -> Result<LegacyAssetInventory, String> {
     let mut layout = discover_trusted_asset_layout(app)?;
     let runtime_error = verify_autohotkey_runtime(&layout).err();
+    let support: SupportCatalog = serde_yaml::from_str(SUPPORT_MANIFEST)
+        .map_err(|error| format!("legacy support manifest is invalid: {error}"))?;
+    let support_error = verify_support_files(&layout.legacy_root, &support)
+        .err()
+        .map(|error| error.to_string());
     if runtime_error.is_some() {
         layout.autohotkey = None;
     }
     let mut entries = HashMap::with_capacity(catalog.len());
     for entry in catalog {
-        let status = verify_catalog_entry(&layout, entry, runtime_error.as_deref())
-            .map_or_else(AssetVerification::Unavailable, |()| {
-                AssetVerification::Verified
-            });
+        let status = verify_catalog_entry(
+            &layout,
+            entry,
+            runtime_error.as_deref(),
+            support_error.as_deref(),
+        )
+        .map_or_else(AssetVerification::Unavailable, |()| {
+            AssetVerification::Verified
+        });
         entries.insert(entry.id.clone(), status);
     }
     Ok(LegacyAssetInventory { layout, entries })
@@ -1518,11 +1766,19 @@ fn verify_catalog_entry(
     layout: &TrustedAssetLayout,
     entry: &LegacyCatalogEntry,
     runtime_error: Option<&str>,
+    support_error: Option<&str>,
 ) -> Result<(), String> {
     if entry.status == LegacyEntryStatus::LegacyBridgeRequired
         && let Some(error) = runtime_error
     {
         return Err(error.to_owned());
+    }
+    if entry.status == LegacyEntryStatus::LegacyBridgeRequired
+        && let Some(error) = support_error
+    {
+        return Err(format!(
+            "the pinned legacy support bundle is unavailable: {error}"
+        ));
     }
     let source = confined_asset_path(&layout.legacy_root, Path::new(&entry.source))
         .map_err(|reason| format!("{}: {reason}", entry.source))?;
@@ -1716,9 +1972,77 @@ fn unavailable_dashboard(reason: &str) -> Value {
         "onboardingComplete": false,
         "safeMode": false,
         "session": { "connected": false, "processName": Value::Null, "pid": Value::Null, "windowTitle": Value::Null, "resolution": Value::Null, "dpi": Value::Null, "foreground": false, "calibration": Value::Null },
-        "readiness": [], "metrics": [], "timeline": [], "queue": [], "features": [], "extensions": [], "logs": [],
+        "readiness": [], "metrics": [], "runHistory": [], "legacyInspection": Value::Null, "questScan": Value::Null,
+        "timeline": [], "queue": [], "features": [], "extensions": [], "logs": [],
         "updatedAt": Utc::now(),
     })
+}
+
+fn clear_profile_scoped_projections(cache: &mut BridgeCache) {
+    cache.run_history.clear();
+    cache.legacy_inspection = None;
+    cache.quest_scan = None;
+}
+
+const fn should_refresh_run_history(state: RunState) -> bool {
+    matches!(
+        state,
+        RunState::Idle | RunState::Faulted | RunState::NeedsAttention
+    )
+}
+
+/// Projects the latest passive stats sample into dashboard stat tiles.
+/// Unconfident readings surface as em-dashes rather than stale or guessed
+/// numbers.
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "rates and minutes are clamped non-negative and bounded far below u64"
+)]
+fn project_stats_metrics(stats: Option<&StatsSample>) -> Vec<Value> {
+    let Some(sample) = stats else {
+        return Vec::new();
+    };
+    let honey = sample
+        .honey
+        .map_or_else(|| "—".to_owned(), format_grouped_number);
+    let rate = sample.honey_per_hour.map_or_else(
+        || "—".to_owned(),
+        |value| format!("{}/h", format_grouped_number(value.round().max(0.0) as u64)),
+    );
+    let minutes = sample.session_minutes.round().max(0.0) as u64;
+    vec![
+        json!({
+            "id": "honey",
+            "label": "Honey (HUD)",
+            "value": honey,
+            "tone": "gold",
+        }),
+        json!({
+            "id": "honey-rate",
+            "label": "Honey per hour",
+            "value": rate,
+            "tone": "green",
+        }),
+        json!({
+            "id": "session-minutes",
+            "label": "Stats session",
+            "value": format!("{}h {:02}m", minutes / 60, minutes % 60),
+            "tone": "blue",
+        }),
+    ]
+}
+
+fn format_grouped_number(value: u64) -> String {
+    let digits = value.to_string();
+    let mut grouped = String::with_capacity(digits.len() + digits.len() / 3);
+    for (index, character) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index).is_multiple_of(3) {
+            grouped.push(',');
+        }
+        grouped.push(character);
+    }
+    grouped
 }
 
 fn unavailable_profile(profile_id: Uuid) -> Value {
@@ -1751,7 +2075,7 @@ fn project_profile(profile: &Profile) -> Value {
             "gathering": {
                 "enabled": profile.automation.gathering_enabled,
                 "fields": fields,
-                "pattern": first_rotation.map_or("stationary", |rotation| rotation.pattern.as_str()),
+                "pattern": first_rotation.map_or("e_lol", |rotation| rotation.pattern.as_str()),
                 "minutesPerField": first_rotation.map_or(1, |rotation| (rotation.gather_seconds / 60).max(1)),
                 "returnAtCapacity": 100,
                 "driftCorrection": false,
@@ -1802,7 +2126,7 @@ fn project_profile(profile: &Profile) -> Value {
 fn safe_ui_settings() -> Value {
     json!({
         "features": {},
-        "gathering": { "enabled": false, "fields": [], "pattern": "stationary", "minutesPerField": 1, "returnAtCapacity": 100, "driftCorrection": false },
+        "gathering": { "enabled": false, "fields": [], "pattern": "e_lol", "minutesPerField": 1, "returnAtCapacity": 100, "driftCorrection": false },
         "safety": { "pauseOnFocusLoss": true, "requireForeground": true, "confirmHighRiskActions": true, "budgets": { "fieldDice": 0, "glitter": 0, "eggs": 0, "stickers": 0, "vouchers": 0, "shrineDonations": 0 } },
         "recovery": { "reconnectEnabled": true, "maxAttempts": 5, "deadlineMinutes": 15, "restartOnConfirmedFreeze": false },
         "monitoring": { "discordEnabled": false, "evidenceRetentionDays": 14, "evidenceLimitMb": 250, "permissions": { "status": false, "macroControl": false, "settings": false, "screenshots": false, "remoteInput": false, "extensionImport": false, "systemPower": false } },
@@ -1993,16 +2317,36 @@ pub struct UiAutomationSettings {
 
 impl UiAutomationSettings {
     fn validate(&self) -> Result<(), String> {
-        if self.gathering.fields.len() > 64 {
-            return Err("a profile can contain at most 64 gathering fields".to_owned());
+        if self.gathering.fields.len() > 17 {
+            return Err(
+                "a profile can contain at most the 17 supported gathering fields".to_owned(),
+            );
         }
         if self.gathering.fields.iter().any(|field| {
             field.trim().is_empty() || field.len() > 100 || field.chars().any(char::is_control)
         }) {
             return Err("gathering field names must be non-empty printable text".to_owned());
         }
+        if let Some(field) = self
+            .gathering
+            .fields
+            .iter()
+            .find(|field| !is_supported_legacy_field(field))
+        {
+            return Err(format!(
+                "gathering field {field:?} is not a supported bundled route; choose it from Gather"
+            ));
+        }
         if self.gathering.pattern.trim().is_empty() || self.gathering.pattern.len() > 128 {
             return Err("gathering pattern identifier is invalid".to_owned());
+        }
+        if !self.gathering.fields.is_empty()
+            && !is_supported_legacy_pattern(&self.gathering.pattern)
+        {
+            return Err(
+                "gathering pattern is not an executable legacy bridge pattern; choose one from Gather"
+                    .to_owned(),
+            );
         }
         if !(1..=24 * 60).contains(&self.gathering.minutes_per_field) {
             return Err("minutes per field must be between 1 and 1440".to_owned());
@@ -2022,20 +2366,37 @@ impl UiAutomationSettings {
     }
 
     fn apply_to(&self, profile: &mut Profile) {
+        let existing_matches_gathering = profile.automation.gathering_enabled
+            == self.gathering.enabled
+            && profile
+                .automation
+                .rotations
+                .iter()
+                .map(|rotation| &rotation.field)
+                .eq(self.gathering.fields.iter())
+            && profile.automation.rotations.first().is_none_or(|rotation| {
+                rotation.pattern == self.gathering.pattern
+                    && (rotation.gather_seconds / 60).max(1) == self.gathering.minutes_per_field
+            });
         profile.automation.gathering_enabled = self.gathering.enabled;
         profile.automation.reconnect_enabled = self.recovery.reconnect_enabled;
-        let gather_seconds = self.gathering.minutes_per_field.saturating_mul(60);
-        profile.automation.rotations = self
-            .gathering
-            .fields
-            .iter()
-            .map(|field| FieldRotation {
-                field: field.clone(),
-                pattern: self.gathering.pattern.clone(),
-                gather_seconds,
-                repetitions: 1,
-            })
-            .collect();
+        // Settings/feature pages do not expose per-slot rotations. Preserve
+        // imported slot-specific patterns, durations, and repetitions unless
+        // the user actually changed the Gather projection.
+        if !existing_matches_gathering {
+            let gather_seconds = self.gathering.minutes_per_field.saturating_mul(60);
+            profile.automation.rotations = self
+                .gathering
+                .fields
+                .iter()
+                .map(|field| FieldRotation {
+                    field: field.clone(),
+                    pattern: self.gathering.pattern.clone(),
+                    gather_seconds,
+                    repetitions: 1,
+                })
+                .collect();
+        }
         apply_feature_map(&mut profile.automation.features, &self.features);
         profile
             .automation
@@ -2193,7 +2554,8 @@ mod tests {
     use super::{
         AssetVerification, LegacyAssetInventory, LegacyEntryStatus, TrustedAssetLayout,
         budget_summary, legacy_catalog, project_extensions, project_profile, run_state_label,
-        safe_ui_settings, verify_autohotkey_runtime, verify_catalog_entry,
+        safe_ui_settings, should_refresh_run_history, verify_autohotkey_runtime,
+        verify_catalog_entry,
     };
 
     #[test]
@@ -2227,6 +2589,25 @@ mod tests {
             run_state_label(nectarpilot_contracts::RunState::NeedsAttention),
             "NeedsAttention"
         );
+    }
+
+    #[test]
+    fn every_settled_state_refreshes_run_history() {
+        assert!(should_refresh_run_history(
+            nectarpilot_contracts::RunState::Idle
+        ));
+        assert!(should_refresh_run_history(
+            nectarpilot_contracts::RunState::Faulted
+        ));
+        assert!(should_refresh_run_history(
+            nectarpilot_contracts::RunState::NeedsAttention
+        ));
+        assert!(!should_refresh_run_history(
+            nectarpilot_contracts::RunState::Running
+        ));
+        assert!(!should_refresh_run_history(
+            nectarpilot_contracts::RunState::Paused
+        ));
     }
 
     #[test]
@@ -2333,7 +2714,7 @@ mod tests {
         };
         verify_autohotkey_runtime(&layout).expect("pinned AutoHotkey runtime");
         for entry in legacy_catalog().expect("catalog") {
-            verify_catalog_entry(&layout, entry, None)
+            verify_catalog_entry(&layout, entry, None, None)
                 .unwrap_or_else(|error| panic!("{} failed verification: {error}", entry.source));
         }
     }

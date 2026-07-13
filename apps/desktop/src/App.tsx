@@ -288,7 +288,13 @@ export default function App({ service }: { service?: NectarService }) {
           />
         );
       case "diagnostics":
-        return <DiagnosticsPage snapshot={snapshot} />;
+        return (
+          <DiagnosticsPage
+            snapshot={snapshot}
+            actions={controller.actions}
+            pendingAction={controller.pendingAction}
+          />
+        );
       case "about":
         return <AboutPage />;
     }

@@ -5,6 +5,7 @@ import {
   CloudOff,
   Database,
   Eye,
+  History,
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
@@ -13,6 +14,10 @@ import { activeProfile, type DashboardSnapshot } from "../types/contracts";
 export function MonitoringPage({ snapshot }: { snapshot: DashboardSnapshot }) {
   const profile = activeProfile(snapshot);
   const monitoring = profile.settings.monitoring;
+  const metrics = snapshot.metrics ?? [];
+  const runHistory = (snapshot.runHistory ?? []).filter(
+    (record) => record.profileId === snapshot.activeProfileId,
+  );
   return (
     <div className="page">
       <section className="page-heading">
@@ -27,6 +32,60 @@ export function MonitoringPage({ snapshot }: { snapshot: DashboardSnapshot }) {
         <span className="safe-default-badge">
           <LockKeyhole size={16} /> Diagnostics stay local
         </span>
+      </section>
+      {metrics.length > 0 && (
+        <section className="stat-metrics-grid" aria-label="Live HUD metrics">
+          {metrics.map((metric) => (
+            <article
+              className={`panel stat-metric-card stat-metric-${metric.tone ?? "neutral"}`}
+              key={metric.id}
+            >
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.delta ?? "Confident HUD readings only"}</small>
+            </article>
+          ))}
+        </section>
+      )}
+      <section className="panel run-history-panel">
+        <header className="panel-header">
+          <div>
+            <span className="eyebrow">Run history</span>
+            <h2>
+              <History size={18} /> Recent runs
+            </h2>
+          </div>
+        </header>
+        {runHistory.length === 0 ? (
+          <p className="run-history-empty">
+            No completed runs recorded for {profile.name} yet.
+          </p>
+        ) : (
+          <div className="run-history-list">
+            {runHistory.slice(0, 10).map((record) => (
+              <article className="run-history-entry" key={record.runId}>
+                <span
+                  className={`run-history-state run-history-state-${record.finalState.toLocaleLowerCase()}`}
+                >
+                  {record.finalState}
+                </span>
+                <div className="run-history-copy">
+                  <strong>{record.kind.replaceAll("_", " ")}</strong>
+                  <p>{record.summary}</p>
+                </div>
+                <div className="run-history-meta">
+                  <span>
+                    {record.stepsSucceeded} succeeded · {record.stepsFailed}{" "}
+                    failed
+                  </span>
+                  <time dateTime={record.finishedAt}>
+                    {new Date(record.finishedAt).toLocaleString()}
+                  </time>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
       <section className="monitoring-hero-grid">
         <article className="panel monitor-status-card">

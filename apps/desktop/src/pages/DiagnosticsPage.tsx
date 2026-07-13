@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { NectarActions } from "../hooks/useNectarPilot";
 import type { DashboardSnapshot, DiagnosticLog } from "../types/contracts";
 
 const levels: Array<DiagnosticLog["level"] | "all"> = [
@@ -21,7 +22,15 @@ const levels: Array<DiagnosticLog["level"] | "all"> = [
   "debug",
 ];
 
-export function DiagnosticsPage({ snapshot }: { snapshot: DashboardSnapshot }) {
+export function DiagnosticsPage({
+  snapshot,
+  actions,
+  pendingAction,
+}: {
+  snapshot: DashboardSnapshot;
+  actions: NectarActions;
+  pendingAction: string | null;
+}) {
   const [level, setLevel] = useState<(typeof levels)[number]>("all");
   const [query, setQuery] = useState("");
   const [bundleReady, setBundleReady] = useState(false);
@@ -46,13 +55,43 @@ export function DiagnosticsPage({ snapshot }: { snapshot: DashboardSnapshot }) {
             exposing secrets.
           </p>
         </div>
-        <button
-          className="button button-primary"
-          onClick={() => setBundleReady(true)}
-        >
-          <Download size={16} /> Export support bundle
-        </button>
+        <div className="draft-actions">
+          <button
+            className="button button-secondary"
+            disabled={pendingAction !== null}
+            onClick={() => void actions.refreshSession()}
+          >
+            Refresh session
+          </button>
+          <button
+            className="button button-primary"
+            onClick={() => setBundleReady(true)}
+          >
+            <Download size={16} /> Export support bundle
+          </button>
+        </div>
       </section>
+      {(snapshot.safeMode ||
+        snapshot.runState === "Faulted" ||
+        snapshot.runState === "NeedsAttention") && (
+        <div className="inline-alert inline-alert-danger" role="alert">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>Automation needs acknowledgement</strong>
+            <span>
+              {snapshot.runStateReason ??
+                "Review the visible log reason before allowing another run."}
+            </span>
+          </div>
+          <button
+            className="button button-secondary"
+            disabled={pendingAction !== null}
+            onClick={() => void actions.acknowledgeAttention()}
+          >
+            Acknowledge & reset
+          </button>
+        </div>
+      )}
       {bundleReady && (
         <div className="inline-alert inline-alert-success" role="status">
           <CheckCircle2 size={18} />
@@ -76,29 +115,65 @@ export function DiagnosticsPage({ snapshot }: { snapshot: DashboardSnapshot }) {
         <DiagnosticStatus
           icon={<MonitorCog />}
           label="Roblox session"
-          value="Owned & foreground"
+          value={
+            snapshot.session.connected
+              ? snapshot.session.foreground
+                ? "Verified & foreground"
+                : "Found — input paused"
+              : "Not detected"
+          }
           detail={`PID ${snapshot.session.pid ?? "—"} · ${snapshot.session.resolution ?? "Unknown"}`}
-          tone="success"
+          tone={
+            snapshot.session.connected && snapshot.session.foreground
+              ? "success"
+              : "warning"
+          }
         />
         <DiagnosticStatus
           icon={<ShieldCheck />}
           label="Input broker"
-          value="Guarded"
-          detail="No held keys or mouse buttons"
-          tone="success"
+          value={
+            snapshot.session.foreground
+              ? "Guarded"
+              : "Waiting for verified focus"
+          }
+          detail={
+            snapshot.session.foreground
+              ? "Input stays scoped to the adopted Roblox window"
+              : "No input can be sent until Roblox is foreground"
+          }
+          tone={snapshot.session.foreground ? "success" : "warning"}
         />
         <DiagnosticStatus
           icon={<Database />}
           label="Runtime database"
-          value="Healthy"
-          detail="Last transaction 12 sec ago"
-          tone="success"
+          value={
+            snapshot.runState === "Faulted" ? "Needs recovery" : "Connected"
+          }
+          detail={
+            snapshot.safeMode
+              ? "Safe mode is active after repeated daemon crashes"
+              : "The daemon is the only configuration and runtime-state writer"
+          }
+          tone={
+            snapshot.safeMode || snapshot.runState === "Faulted"
+              ? "warning"
+              : "success"
+          }
         />
         <DiagnosticStatus
           icon={<AlertTriangle />}
           label="Vision evidence"
-          value="1 warning"
-          detail="Hive check deferred to preflight"
+          value={
+            snapshot.readiness.find((check) => check.id === "native-detectors")
+              ?.status === "ready"
+              ? "Ready"
+              : "Compatibility mode"
+          }
+          detail={
+            snapshot.readiness.find((check) => check.id === "native-detectors")
+              ?.detail ?? "No detector status was reported yet"
+          }
           tone="warning"
         />
       </section>

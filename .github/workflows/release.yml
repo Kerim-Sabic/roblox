@@ -48,6 +48,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --prod --audit-level high
       - run: ./scripts/verify-no-secrets.ps1
+      - run: ./scripts/verify-packaged-legacy-layout.ps1
       - run: ./scripts/verify-parity-fixtures.ps1 -RequireCaptured
       - name: Enforce beta/stable release gate
         env:

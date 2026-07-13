@@ -11,7 +11,7 @@ Public beta is blocked until every row is implemented in the Rust engine or expl
 | Travel | Hive detection and claiming | ☐ | ☐ | ☐ | ☐ |
 | Travel | Walk/cannon travel and interaction prompts | ☐ | ☐ | ☐ | ☐ |
 | Recovery | Reset, death, disconnect and bounded reconnect (disconnect template + private-server rejoin + reset re-anchor) | ☐ | ☑ | ☐ | ☐ |
-| Activities | Clock and dispensers | ☐ | ☐ | ☐ | ☐ |
+| Activities | Allowlisted clock, free dispensers, and field boosters (profile-scoped cooldown steps at cycle boundaries; persistence errors fail closed) | ☐ | ☑ | ☑ | ☐ |
 | Activities | Blender and memory matches | ☐ | ☐ | ☐ | ☐ |
 | Combat | Bug runs and bosses | ☐ | ☐ | ☐ | ☐ |
 | Combat | Night and Vicious Bee | ☐ | ☐ | ☐ | ☐ |
@@ -21,6 +21,7 @@ Public beta is blocked until every row is implemented in the Rust engine or expl
 | Quests | Polar, Honey, Black and Brown Bear | ☐ | ☐ | ☐ | ☐ |
 | Quests | Science Bear catalog and overlap planner | ☑ | N/A | ☑ | ☐ |
 | Quests | Polar/Black/Bucko/Riley catalogs and giver-scoped title detection | ☑ | N/A | ☑ | ☐ |
+| Quests | Advisory quest-log scan (verified open/close, icon + title + bars) | ☑ | N/A | ☐ | ☐ |
 | Quests | Bucko and Riley Bee | ☐ | ☐ | ☐ | ☐ |
 | Planters | Manual mode and timers | ☐ | ☐ | ☐ | ☐ |
 | Planters | Nectar priority automation | ☐ | ☐ | ☐ | ☐ |

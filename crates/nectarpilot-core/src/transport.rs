@@ -35,7 +35,11 @@ impl NamedPipeSpec {
         let normalized = identity.trim().to_ascii_lowercase();
         let hash = hex::encode(Sha256::digest(normalized.as_bytes()));
         Self {
-            path: format!(r"\\.\pipe\nectarpilot-v1-{}", &hash[..16]),
+            path: format!(
+                r"\\.\pipe\nectarpilot-v{}-{}",
+                PROTOCOL_VERSION,
+                &hash[..16]
+            ),
             protocol_version: PROTOCOL_VERSION,
             max_frame_bytes: MAX_FRAME_BYTES,
             reject_remote_clients: true,
@@ -242,7 +246,9 @@ pub enum TransportError {
 
 #[cfg(test)]
 mod tests {
-    use nectarpilot_contracts::{Command, CommandEnvelope, DaemonEvent, EventEnvelope};
+    use nectarpilot_contracts::{
+        Command, CommandEnvelope, DaemonEvent, EventEnvelope, PROTOCOL_VERSION,
+    };
     use tokio::io::duplex;
     use uuid::Uuid;
 
@@ -276,7 +282,11 @@ mod tests {
         let first = NamedPipeSpec::for_user_identity("DOMAIN\\Alice");
         let second = NamedPipeSpec::for_user_identity("domain\\alice");
         assert_eq!(first, second);
-        assert!(first.path.starts_with(r"\\.\pipe\nectarpilot-v1-"));
+        assert!(
+            first
+                .path
+                .starts_with(&format!(r"\\.\pipe\nectarpilot-v{PROTOCOL_VERSION}-"))
+        );
         assert!(first.current_user_acl_required);
         assert!(first.reject_remote_clients);
     }

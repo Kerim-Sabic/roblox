@@ -1,4 +1,5 @@
 mod legacy_service;
+mod quest_scan;
 
 use std::{
     env,
@@ -108,6 +109,9 @@ fn initialize_engine(
         }
     }
     engine.install_secret_port(Arc::new(DpapiSecretPort));
+    engine.install_quest_scan_port(Arc::new(quest_scan::QuestScanService::new(
+        legacy_service::compatibility_root(),
+    )));
     engine.set_report_directory(default_data_directory().join("reports"));
 
     if store
@@ -558,6 +562,10 @@ fn default_database_path() -> PathBuf {
 fn default_data_directory() -> PathBuf {
     env::var_os("LOCALAPPDATA").map_or_else(
         || PathBuf::from("."),
-        |local_app_data| PathBuf::from(local_app_data).join("NectarPilot"),
+        // Keep CLI/doctor/import on the same current-user directory as the
+        // Tauri application (`identifier: com.nectarpilot.desktop`). The
+        // desktop always passes this path explicitly, but matching it here
+        // prevents a second empty database from confusing diagnostics.
+        |local_app_data| PathBuf::from(local_app_data).join("com.nectarpilot.desktop"),
     )
 }

@@ -41,5 +41,6 @@ pub use session::{ProcessId, RobloxSession, SessionTarget, WindowHandle};
 
 #[cfg(windows)]
 pub use windows_backend::{
-    DiscoveredRobloxClient, WindowsHotkeySet, discover_roblox_clients, tap_global_virtual_key,
+    DiscoveredRobloxClient, WindowsHotkeySet, bring_window_to_foreground, discover_roblox_clients,
+    tap_global_virtual_key,
 };

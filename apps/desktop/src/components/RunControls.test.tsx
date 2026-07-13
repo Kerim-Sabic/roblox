@@ -6,6 +6,7 @@ import { RunControls } from "./RunControls";
 const actions: NectarActions = {
   refreshSession: vi.fn(),
   start: vi.fn(),
+  acknowledgeAttention: vi.fn(),
   pause: vi.fn(),
   stop: vi.fn(),
   emergencyStop: vi.fn(),
@@ -16,6 +17,7 @@ const actions: NectarActions = {
   runLegacyExtension: vi.fn(),
   startLegacySession: vi.fn(),
   inspectLegacy: vi.fn(),
+  scanQuests: vi.fn(),
   setCompactMode: vi.fn(),
 };
 

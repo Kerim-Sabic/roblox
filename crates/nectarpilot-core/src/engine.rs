@@ -13,8 +13,8 @@ use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use nectarpilot_contracts::{
     ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, EventEnvelope,
-    LegacyInspection, Profile, RunRecord, RunSnapshot, RunState, SessionProgress, StartMode,
-    StatsSample,
+    LegacyInspection, Profile, QuestScanResult, RunRecord, RunSnapshot, RunState, SessionProgress,
+    StartMode, StatsSample,
 };
 use parking_lot::{Mutex, RwLock};
 use serde_json::json;
@@ -32,7 +32,10 @@ use crate::{
     persistence::{SqliteStore, StoreError},
     reconnect::{ReconnectOutcome, ReconnectPolicy, run_bounded_reconnect},
     scheduler::{ScheduleError, TaskKey, TaskPermit, TaskScheduler},
-    session::{SessionStep, SessionStepKind, build_session_plan, validate_session_limits},
+    session::{
+        CollectStep, SessionStep, SessionStepKind, build_collect_steps, build_session_plan,
+        validate_session_limits,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -226,6 +229,20 @@ pub trait SecretPort: Send + Sync + 'static {
     fn open(&self, ciphertext: &[u8]) -> Result<Vec<u8>, AutomationError>;
 }
 
+/// Daemon-owned advisory quest-log scanning. Kept separate from the
+/// automation backend so core remains incapable of screen or input access.
+#[async_trait]
+pub trait QuestScanPort: Send + Sync + 'static {
+    /// Performs one bounded scan and reports what could be read confidently.
+    /// Implementations must observe `context`, stop before any further input
+    /// after cancellation, and release every held input before returning.
+    async fn scan(
+        &self,
+        profile: &Profile,
+        context: TaskContext,
+    ) -> Result<QuestScanResult, AutomationError>;
+}
+
 pub struct AutomationEngine<B: AutomationBackend> {
     inner: Arc<EngineInner<B>>,
 }
@@ -253,6 +270,7 @@ struct EngineInner<B: AutomationBackend> {
     scheduler: TaskScheduler,
     legacy_port: RwLock<Option<Arc<dyn LegacyExecutionPort>>>,
     secret_port: RwLock<Option<Arc<dyn SecretPort>>>,
+    quest_scan_port: RwLock<Option<Arc<dyn QuestScanPort>>>,
     report_directory: RwLock<Option<std::path::PathBuf>>,
     reconnect_policy: RwLock<ReconnectPolicy>,
     crash_guard: Mutex<CrashLoopGuard>,
@@ -291,6 +309,7 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 scheduler: TaskScheduler::default(),
                 legacy_port: RwLock::new(None),
                 secret_port: RwLock::new(None),
+                quest_scan_port: RwLock::new(None),
                 report_directory: RwLock::new(None),
                 reconnect_policy: RwLock::new(ReconnectPolicy::default()),
                 crash_guard: Mutex::new(crash_guard),
@@ -335,6 +354,10 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         *self.inner.secret_port.write() = Some(port);
     }
 
+    pub fn install_quest_scan_port(&self, port: Arc<dyn QuestScanPort>) {
+        *self.inner.quest_scan_port.write() = Some(port);
+    }
+
     /// Directory that receives redacted end-of-run JSON reports.
     pub fn set_report_directory(&self, directory: std::path::PathBuf) {
         *self.inner.report_directory.write() = Some(directory);
@@ -373,6 +396,10 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         result
     }
 
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one flat arm per protocol command keeps the dispatch auditable"
+    )]
     async fn dispatch(&self, envelope: CommandEnvelope) -> Result<(), AutomationError> {
         match envelope.command {
             Command::Start { mode } => self.start(envelope.profile_id, mode).await,
@@ -410,9 +437,20 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 self.inspect_legacy(envelope.profile_id, &script_id).await
             }
             Command::ImportSecret { name, value } => self.import_secret(&name, &value),
+            Command::ScanQuests => self.scan_quests(envelope.profile_id).await,
             Command::GetRunHistory => {
+                let profile_id = if envelope.profile_id.is_nil() {
+                    self.inner.profile_id.read().unwrap_or_else(Uuid::nil)
+                } else {
+                    envelope.profile_id
+                };
+                let entries = self
+                    .inner
+                    .store
+                    .list_run_records_for_profile(profile_id, 50)?;
                 self.emit(DaemonEvent::RunHistory {
-                    entries: self.inner.store.list_run_records(50)?,
+                    profile_id,
+                    entries,
                 });
                 Ok(())
             }
@@ -460,15 +498,25 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 Ok(())
             }
             Command::AcknowledgeAttention => {
-                if !matches!(self.state(), RunState::NeedsAttention | RunState::Faulted) {
+                let state = self.state();
+                let safe_mode = self.inner.safe_mode.load(Ordering::SeqCst);
+                if !safe_mode && !matches!(state, RunState::NeedsAttention | RunState::Faulted) {
                     return Err(AutomationError::InvalidState {
-                        current: self.state(),
+                        current: state,
                         command: "acknowledge_attention",
                     });
                 }
                 self.inner.safe_mode.store(false, Ordering::SeqCst);
                 self.inner.store.set_runtime_value("safe_mode", "false")?;
-                self.transition(RunState::Idle, "attention acknowledged");
+                self.inner.crash_guard.lock().clear();
+                self.inner
+                    .store
+                    .set_runtime_value("daemon_crash_timestamps", "[]")?;
+                if state == RunState::Idle {
+                    self.emit(DaemonEvent::Snapshot(self.snapshot()));
+                } else {
+                    self.transition(RunState::Idle, "attention acknowledged");
+                }
                 Ok(())
             }
         }
@@ -636,6 +684,8 @@ impl<B: AutomationBackend> AutomationEngine<B> {
             .ok_or(StoreError::ProfileNotFound(profile_id))?;
         let plan = build_session_plan(&profile)
             .map_err(|error| AutomationError::InvalidCommand(error.to_string()))?;
+        let collect = build_collect_steps(&profile)
+            .map_err(|error| AutomationError::InvalidCommand(error.to_string()))?;
         self.inner
             .store
             .set_runtime_value("selected_profile_id", &profile_id.to_string())?;
@@ -669,6 +719,7 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 .run_legacy_session_worker(
                     profile,
                     plan,
+                    collect,
                     max_cycles,
                     max_minutes,
                     port,
@@ -689,6 +740,7 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         &self,
         profile: Profile,
         plan: Vec<SessionStep>,
+        collect: Vec<CollectStep>,
         max_cycles: u32,
         max_minutes: u32,
         port: Arc<dyn LegacyExecutionPort>,
@@ -705,7 +757,7 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         // Preflight every unique step, including the generated reset harness,
         // before any movement begins.
         let mut preflighted = HashSet::new();
-        for step in &plan {
+        for step in plan.iter().chain(collect.iter().map(|entry| &entry.step)) {
             if !preflighted.insert(step.script_id.as_str()) {
                 continue;
             }
@@ -757,6 +809,98 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         let step_count = u32::try_from(plan.len()).unwrap_or(u32::MAX);
 
         'session: for cycle in 1..=max_cycles {
+            // Cooldown-scheduled collect targets run at cycle boundaries so
+            // they never interrupt gathering mid-pattern. Each successful
+            // collect is followed by a reset so the next step starts at the
+            // hive, exactly as the legacy macro sequenced its collects.
+            for entry in &collect {
+                if context.checkpoint().await.is_err() {
+                    reason = "session cancelled".into();
+                    break 'session;
+                }
+                if Instant::now() >= session_deadline {
+                    reason = format!("session reached its {max_minutes}-minute limit");
+                    break 'session;
+                }
+                let due = match self.collect_due(&entry.last_run_key, entry.cooldown_minutes) {
+                    Ok(due) => due,
+                    Err(error) => {
+                        failed += 1;
+                        final_state = RunState::Faulted;
+                        reason = format!("collection cooldown read failed: {error}");
+                        tracing::error!(%error, key = %entry.last_run_key, "collection cooldown read failed closed");
+                        break 'session;
+                    }
+                };
+                if !due {
+                    continue;
+                }
+                self.emit(DaemonEvent::SessionProgress(SessionProgress {
+                    cycle,
+                    max_cycles,
+                    step_index: 0,
+                    step_count,
+                    description: entry.step.description.clone(),
+                }));
+                let mut collect_ok = false;
+                for script in [
+                    (
+                        entry.step.script_id.as_str(),
+                        entry.step.approved_sha256.as_str(),
+                    ),
+                    (
+                        crate::session::BUILTIN_RESET_SCRIPT_ID,
+                        crate::session::BUILTIN_APPROVAL,
+                    ),
+                ] {
+                    let execution =
+                        bounded_legacy_call(&context, None, session_deadline, |child_context| {
+                            port.execute(&profile, script.0, script.1, child_context)
+                        })
+                        .await;
+                    match execution {
+                        TimedLegacyCall::Completed(result) => {
+                            let ok = matches!(
+                                result.outcome,
+                                ActionOutcome::Succeeded | ActionOutcome::Skipped
+                            );
+                            self.emit(DaemonEvent::ActionCompleted(result));
+                            if ok {
+                                succeeded += 1;
+                                collect_ok = true;
+                            } else {
+                                failed += 1;
+                                final_state = RunState::NeedsAttention;
+                                reason = format!("collect step failed: {}", entry.step.description);
+                                break 'session;
+                            }
+                        }
+                        TimedLegacyCall::UserCancelled => {
+                            reason = "session cancelled".into();
+                            break 'session;
+                        }
+                        TimedLegacyCall::SessionDeadline => {
+                            reason = format!("session reached its {max_minutes}-minute limit");
+                            break 'session;
+                        }
+                        TimedLegacyCall::FieldDeadline => {
+                            unreachable!("collect steps run without a field deadline")
+                        }
+                    }
+                }
+                if collect_ok
+                    && let Err(error) = self
+                        .inner
+                        .store
+                        .set_runtime_value(&entry.last_run_key, &Utc::now().to_rfc3339())
+                {
+                    failed += 1;
+                    final_state = RunState::Faulted;
+                    reason = format!("collection cooldown write failed: {error}");
+                    tracing::error!(%error, key = %entry.last_run_key, "collection cooldown write failed closed");
+                    break 'session;
+                }
+            }
             for (index, step) in plan.iter().enumerate() {
                 if context.checkpoint().await.is_err() {
                     reason = "session cancelled".into();
@@ -918,6 +1062,25 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         self.finish_worker(final_state, &reason);
     }
 
+    /// True when the runtime record is absent or older than the cooldown.
+    /// Read errors and malformed timestamps are returned to the worker so the
+    /// scheduler faults closed instead of repeating a potentially valuable
+    /// action whose last-run time is unknown.
+    fn collect_due(&self, key: &str, cooldown_minutes: u32) -> Result<bool, StoreError> {
+        let Some(value) = self.inner.store.runtime_value(key)? else {
+            return Ok(true);
+        };
+        let last =
+            DateTime::parse_from_rfc3339(&value).map_err(|_| StoreError::InvalidRuntimeValue {
+                key: key.to_owned(),
+                expected: "RFC3339 timestamp",
+            })?;
+        Ok(Utc::now()
+            .signed_duration_since(last.with_timezone(&Utc))
+            .num_minutes()
+            >= i64::from(cooldown_minutes))
+    }
+
     /// Decrypts the stored private-server link for recovery, if present.
     /// The plaintext stays in-process and is never emitted or logged.
     fn private_server_link(&self) -> Option<String> {
@@ -957,6 +1120,101 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         let inspection = port.describe(&profile, script_id).await?;
         self.emit(DaemonEvent::LegacyInspection(inspection));
         Ok(())
+    }
+
+    /// Starts one bounded advisory quest-log scan as an exclusive worker. The
+    /// worker lifecycle makes hotkeys, Stop, and the emergency stop share the
+    /// same cancellation/state contract as every other input-bearing task.
+    async fn scan_quests(&self, profile_id: Uuid) -> Result<(), AutomationError> {
+        if self.inner.safe_mode.load(Ordering::SeqCst) {
+            return Err(AutomationError::SafeMode);
+        }
+        if self.state() != RunState::Idle {
+            return Err(AutomationError::InvalidState {
+                current: self.state(),
+                command: "scan_quests",
+            });
+        }
+        let port = self.inner.quest_scan_port.read().clone().ok_or_else(|| {
+            AutomationError::InvalidCommand("quest scanning is unavailable in this daemon".into())
+        })?;
+        let profile = self
+            .inner
+            .store
+            .load_profile(profile_id)?
+            .ok_or(StoreError::ProfileNotFound(profile_id))?;
+        self.inner
+            .store
+            .set_runtime_value("selected_profile_id", &profile_id.to_string())?;
+        let permit = self.inner.scheduler.acquire(TaskKey {
+            profile_id,
+            task_name: "quest_scan".into(),
+        })?;
+
+        let mut worker = self.inner.worker.lock().await;
+        if worker.as_ref().is_some_and(|handle| !handle.is_finished()) {
+            return Err(AutomationError::WorkerAlreadyRunning);
+        }
+        worker.take();
+
+        let cancellation = CancellationToken::new();
+        let (pause_sender, pause_receiver) = watch::channel(false);
+        *self.inner.cancellation.lock() = Some(cancellation.clone());
+        *self.inner.pause_sender.lock() = Some(pause_sender);
+        *self.inner.profile_id.write() = Some(profile_id);
+        *self.inner.run_id.write() = Uuid::now_v7();
+        *self.inner.active_task.write() = Some("quest-scan:preflight".into());
+        self.transition(RunState::Preflight, "quest scan requested");
+
+        let engine = self.clone();
+        let context = TaskContext {
+            cancellation,
+            paused: pause_receiver,
+        };
+        *worker = Some(tokio::spawn(async move {
+            engine
+                .run_quest_scan_worker(profile, port, context, permit)
+                .await;
+        }));
+        Ok(())
+    }
+
+    async fn run_quest_scan_worker(
+        &self,
+        profile: Profile,
+        port: Arc<dyn QuestScanPort>,
+        context: TaskContext,
+        _permit: TaskPermit,
+    ) {
+        let started_at = Utc::now();
+        *self.inner.active_task.write() = Some("quest-scan".into());
+        self.transition(RunState::Running, "quest scan preflight passed");
+
+        let scanned = std::panic::AssertUnwindSafe(port.scan(&profile, context))
+            .catch_unwind()
+            .await
+            .unwrap_or_else(|_| {
+                Err(AutomationError::Backend(
+                    "quest scan worker panicked".into(),
+                ))
+            });
+        let (outcome, reason) = match scanned {
+            Ok(result) => {
+                self.emit(DaemonEvent::QuestScan(result));
+                (ActionOutcome::Succeeded, "quest scan completed".to_owned())
+            }
+            Err(AutomationError::Cancelled) => {
+                (ActionOutcome::Cancelled, "quest scan cancelled".to_owned())
+            }
+            Err(error) => (ActionOutcome::Failed, format!("quest scan failed: {error}")),
+        };
+        self.emit(DaemonEvent::ActionCompleted(action_result(
+            "quest-scan",
+            outcome,
+            started_at,
+            reason.clone(),
+        )));
+        self.finish_worker(RunState::Idle, &reason);
     }
 
     fn import_secret(&self, name: &str, value: &str) -> Result<(), AutomationError> {
@@ -1025,6 +1283,17 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 current: self.state(),
                 command: "pause",
             });
+        }
+        if self
+            .inner
+            .active_task
+            .read()
+            .as_deref()
+            .is_some_and(|task| task.starts_with("quest-scan"))
+        {
+            return Err(AutomationError::InvalidCommand(
+                "quest scans cannot be paused; stop or emergency-stop the scan instead".into(),
+            ));
         }
         let legacy_active = self
             .inner
@@ -1624,10 +1893,12 @@ mod tests {
     use chrono::Utc;
     use nectarpilot_contracts::{
         ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, FieldRotation, Profile,
-        RunState, StartMode,
+        RunRecord, RunState, StartMode,
     };
     use parking_lot::Mutex as TestMutex;
+    use rusqlite::Connection;
     use tempfile::tempdir;
+    use uuid::Uuid;
 
     use crate::{persistence::SqliteStore, reconnect::ReconnectPolicy};
 
@@ -1652,6 +1923,10 @@ mod tests {
         recoveries: AtomicUsize,
         cancelled_patterns: AtomicUsize,
         pattern_delay: Duration,
+    }
+
+    struct BlockingQuestScanPort {
+        cancelled: AtomicBool,
     }
 
     impl SessionLegacyPort {
@@ -1799,6 +2074,19 @@ mod tests {
     }
 
     #[async_trait]
+    impl super::QuestScanPort for BlockingQuestScanPort {
+        async fn scan(
+            &self,
+            _profile: &Profile,
+            context: TaskContext,
+        ) -> Result<nectarpilot_contracts::QuestScanResult, AutomationError> {
+            context.cancellation_token().cancelled().await;
+            self.cancelled.store(true, Ordering::SeqCst);
+            Err(AutomationError::Cancelled)
+        }
+    }
+
+    #[async_trait]
     impl AutomationBackend for PanicBackend {
         async fn preflight(
             &self,
@@ -1876,6 +2164,91 @@ mod tests {
         profile
     }
 
+    #[test]
+    fn collection_cooldown_read_and_parse_failures_are_not_due() {
+        let directory = tempdir().expect("temp directory");
+        let path = directory.path().join("db.sqlite3");
+        let store = Arc::new(SqliteStore::open(&path).expect("store"));
+        let engine = AutomationEngine::new(Arc::new(MockBackend::default()), Arc::clone(&store))
+            .expect("engine");
+        let key = "profile:fixture:collect_last_run:clock";
+
+        assert!(engine.collect_due(key, 60).expect("missing value is due"));
+        store
+            .set_runtime_value(key, "not-a-timestamp")
+            .expect("invalid fixture value");
+        assert!(
+            engine.collect_due(key, 60).is_err(),
+            "malformed state must fail closed"
+        );
+
+        Connection::open(&path)
+            .expect("fixture connection")
+            .execute_batch("DROP TABLE runtime_state;")
+            .expect("remove runtime table");
+        assert!(
+            engine.collect_due(key, 60).is_err(),
+            "persistence read errors must fail closed"
+        );
+    }
+
+    #[tokio::test]
+    async fn collection_cooldown_write_failure_faults_before_gathering() {
+        let directory = tempdir().expect("temp directory");
+        let path = directory.path().join("db.sqlite3");
+        let store = Arc::new(SqliteStore::open(&path).expect("store"));
+        let mut profile = session_profile(1, false);
+        profile.automation.collect = vec![nectarpilot_contracts::CollectTask {
+            target: "Clock".into(),
+            cooldown_minutes: 60,
+        }];
+        profile
+            .trusted_extensions
+            .insert("legacy:route:paths/gtc-clock.ahk".into(), "c".repeat(64));
+        store.save_profile(&profile).expect("profile");
+        Connection::open(&path)
+            .expect("fixture connection")
+            .execute_batch(
+                "CREATE TRIGGER reject_collect_timestamp
+                 BEFORE INSERT ON runtime_state
+                 WHEN instr(NEW.key, ':collect_last_run:') > 0
+                 BEGIN
+                   SELECT RAISE(FAIL, 'fixture cooldown write failure');
+                 END;",
+            )
+            .expect("failure trigger");
+
+        let engine =
+            AutomationEngine::new(Arc::new(MockBackend::default()), store).expect("engine");
+        let legacy = Arc::new(SessionLegacyPort::new(
+            false,
+            false,
+            Duration::from_millis(1),
+        ));
+        engine.install_legacy_port(Arc::clone(&legacy) as Arc<dyn LegacyExecutionPort>);
+
+        engine
+            .handle_command(CommandEnvelope::new(
+                profile.id,
+                Command::StartLegacySession {
+                    max_cycles: 1,
+                    max_minutes: 5,
+                },
+            ))
+            .await
+            .expect("start session");
+        wait_for_state(&engine, RunState::Faulted).await;
+
+        assert_eq!(
+            legacy.calls(),
+            vec![
+                "legacy:route:paths/gtc-clock.ahk".to_owned(),
+                "builtin:reset-convert".to_owned(),
+            ],
+            "gathering must not continue when the cooldown timestamp cannot persist"
+        );
+    }
+
     #[tokio::test]
     async fn successful_recovery_retries_the_same_session_step() {
         let directory = tempdir().expect("temp directory");
@@ -1913,7 +2286,7 @@ mod tests {
         assert_eq!(legacy.recoveries.load(Ordering::SeqCst), 1);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
     async fn gather_repeats_until_its_duration_then_runs_reset() {
         let directory = tempdir().expect("temp directory");
         let store =
@@ -1939,8 +2312,51 @@ mod tests {
             ))
             .await
             .expect("start session");
-        wait_for_state(&engine, RunState::Running).await;
-        wait_for_state(&engine, RunState::Idle).await;
+
+        // Drive the timed gather with Tokio's virtual clock rather than
+        // depending on host scheduling.  The old real-time fixture could
+        // occasionally fit only one 200 ms pattern into its one-second
+        // window under a contended CI worker, which made a behavioral
+        // assertion flaky.
+        for expected_patterns in 1..=3 {
+            for _ in 0..100 {
+                let started = legacy
+                    .calls()
+                    .iter()
+                    .filter(|script_id| script_id.contains("legacy:pattern:"))
+                    .count();
+                if started >= expected_patterns {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+            let started = legacy
+                .calls()
+                .iter()
+                .filter(|script_id| script_id.contains("legacy:pattern:"))
+                .count();
+            assert!(
+                started >= expected_patterns,
+                "pattern {expected_patterns} did not start: {:?}",
+                legacy.calls()
+            );
+            tokio::time::advance(Duration::from_millis(200)).await;
+            tokio::task::yield_now().await;
+        }
+        // Advance precisely to the field deadline.  The worker must stop the
+        // timed gather and execute its reset step without relying on wall time.
+        tokio::time::advance(Duration::from_millis(400)).await;
+        for _ in 0..100 {
+            if engine.state() == RunState::Idle {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            engine.state(),
+            RunState::Idle,
+            "timed session did not finish"
+        );
 
         let calls = legacy.calls();
         let patterns = calls
@@ -2056,6 +2472,46 @@ mod tests {
             .await
             .expect("emergency stop");
         wait_for_state(&engine, RunState::Idle).await;
+        assert!(backend.release_count() >= 1);
+    }
+
+    #[tokio::test]
+    async fn quest_scan_is_exclusive_and_emergency_stop_cancels_it() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let profile = Profile::new("quest scan fixture");
+        store.save_profile(&profile).expect("profile");
+        let backend = Arc::new(MockBackend::default());
+        let engine = AutomationEngine::new(Arc::clone(&backend), store).expect("engine");
+        let scanner = Arc::new(BlockingQuestScanPort {
+            cancelled: AtomicBool::new(false),
+        });
+        engine.install_quest_scan_port(Arc::clone(&scanner) as Arc<dyn super::QuestScanPort>);
+
+        engine
+            .handle_command(CommandEnvelope::new(profile.id, Command::ScanQuests))
+            .await
+            .expect("start quest scan");
+        wait_for_state(&engine, RunState::Running).await;
+
+        let overlap = engine
+            .handle_command(CommandEnvelope::new(
+                profile.id,
+                Command::Start {
+                    mode: StartMode::Normal,
+                },
+            ))
+            .await
+            .expect_err("automation must not overlap quest input");
+        assert!(matches!(overlap, AutomationError::InvalidState { .. }));
+
+        engine
+            .handle_command(CommandEnvelope::new(profile.id, Command::EmergencyStop))
+            .await
+            .expect("emergency stop");
+        wait_for_state(&engine, RunState::Idle).await;
+        assert!(scanner.cancelled.load(Ordering::SeqCst));
         assert!(backend.release_count() >= 1);
     }
 
@@ -2190,6 +2646,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn run_history_response_is_scoped_to_the_requested_profile() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let first = Profile::new("first");
+        let second = Profile::new("second");
+        store.save_profile(&first).expect("first profile");
+        store.save_profile(&second).expect("second profile");
+        let now = Utc::now();
+        for (profile, summary) in [(&first, "first run"), (&second, "second run")] {
+            store
+                .record_run(&RunRecord {
+                    run_id: Uuid::now_v7(),
+                    profile_id: profile.id,
+                    kind: "legacy".to_owned(),
+                    started_at: now,
+                    finished_at: now,
+                    final_state: "Idle".to_owned(),
+                    summary: summary.to_owned(),
+                    steps_succeeded: 1,
+                    steps_failed: 0,
+                })
+                .expect("run record");
+        }
+        let engine =
+            AutomationEngine::new(Arc::new(MockBackend::default()), store).expect("engine");
+        let mut events = engine.subscribe();
+
+        engine
+            .handle_command(CommandEnvelope::new(first.id, Command::GetRunHistory))
+            .await
+            .expect("run history");
+
+        let (profile_id, entries) = loop {
+            let event = events.recv().await.expect("history event");
+            if let DaemonEvent::RunHistory {
+                profile_id,
+                entries,
+            } = event.event
+            {
+                break (profile_id, entries);
+            }
+        };
+        assert_eq!(profile_id, first.id);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].profile_id, first.id);
+        assert_eq!(entries[0].summary, "first run");
+    }
+
+    #[tokio::test]
     async fn empty_store_gets_one_persisted_safe_default_profile() {
         let directory = tempdir().expect("temp directory");
         let store =
@@ -2274,5 +2780,46 @@ mod tests {
         let restarted = AutomationEngine::new(Arc::new(MockBackend::default()), store)
             .expect("restarted engine");
         assert!(restarted.snapshot().safe_mode);
+    }
+
+    #[tokio::test]
+    async fn persisted_safe_mode_can_be_acknowledged_while_idle() {
+        let directory = tempdir().expect("temp directory");
+        let store = Arc::new(
+            SqliteStore::open(directory.path().join("db.sqlite3")).expect("persistent store"),
+        );
+        let now = Utc::now();
+        {
+            let engine =
+                AutomationEngine::new(Arc::new(MockBackend::default()), Arc::clone(&store))
+                    .expect("engine");
+            for _ in 0..3 {
+                engine.record_daemon_crash(now).expect("record crash");
+            }
+        }
+
+        let restarted = AutomationEngine::new(Arc::new(MockBackend::default()), Arc::clone(&store))
+            .expect("restarted engine");
+        assert_eq!(restarted.state(), RunState::Idle);
+        assert!(restarted.snapshot().safe_mode);
+        let profile_id = restarted.snapshot().profile_id;
+        restarted
+            .handle_command(CommandEnvelope::new(
+                profile_id,
+                Command::AcknowledgeAttention,
+            ))
+            .await
+            .expect("acknowledge persisted safe mode");
+        assert!(!restarted.snapshot().safe_mode);
+        assert_eq!(
+            store.runtime_value("safe_mode").expect("safe mode value"),
+            Some("false".into())
+        );
+        assert_eq!(
+            store
+                .runtime_value("daemon_crash_timestamps")
+                .expect("crash history value"),
+            Some("[]".into())
+        );
     }
 }

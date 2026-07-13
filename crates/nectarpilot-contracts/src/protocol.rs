@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::Profile;
 
-pub const PROTOCOL_VERSION: u16 = 1;
+pub const PROTOCOL_VERSION: u16 = 2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 pub struct CommandEnvelope {
@@ -100,6 +100,11 @@ pub enum Command {
         value: String,
     },
     GetRunHistory,
+    /// Opens the in-game quest log from the client-anchored legacy menu
+    /// position, verifies the open state, reads the giver icon, title, and
+    /// objective bars, then closes it. Requires an idle engine and one
+    /// foreground Roblox client; uncertain readings are reported, not guessed.
+    ScanQuests,
     SaveProfile {
         profile: Box<Profile>,
     },
@@ -198,11 +203,17 @@ pub enum DaemonEvent {
         name: String,
     },
     RunHistory {
+        /// Profile whose records were requested. This lets consumers reject
+        /// delayed responses after the active profile changes.
+        profile_id: Uuid,
         entries: Vec<RunRecord>,
     },
     /// Passive screen-derived statistics. `None` fields mean the reading was
     /// not confident; they are never guessed.
     StatsSample(StatsSample),
+    /// Advisory quest-log reading. Absent fields mean that part of the log
+    /// could not be read confidently.
+    QuestScan(QuestScanResult),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -287,6 +298,21 @@ pub struct RunRecord {
     pub summary: String,
     pub steps_succeeded: u32,
     pub steps_failed: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct QuestScanResult {
+    pub scanned_at: DateTime<Utc>,
+    /// Detected quest giver (`snake_case`), when the icon match was confident.
+    pub giver: Option<String>,
+    pub quest_id: Option<String>,
+    pub quest_name: Option<String>,
+    /// Objective bar completion in screen order; empty when unreadable.
+    pub bars_complete: Vec<bool>,
+    /// Fields that advance the detected quest's incomplete objectives.
+    pub recommended_fields: Vec<String>,
+    /// Human-readable uncertainty and held-work explanations.
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]

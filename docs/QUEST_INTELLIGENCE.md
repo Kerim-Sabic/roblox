@@ -36,4 +36,8 @@ Bucko and Riley share several quest names (`Tour`, `Tango`, `Scavenge`, ...). Ti
 - Overlap is preferred: for example, Bamboo can advance a Bamboo requirement, blue pollen, goo, token, and mob objectives from several quests in one visit.
 - Travel cost and a three-minute dwell window reduce repeated cannon/reset travel for marginal score changes.
 
-The planner is currently an offline decision component. Connecting its recommendations to live OCR, detectors, and native task execution remains fixture- and soak-gated; the catalog alone is not evidence of live quest parity.
+## Advisory live scan
+
+`ScanQuests` performs one bounded in-game reading: it uses Natro's client-anchored fixed menu position, verifies the open state against the pinned `questlog` template before reading anything, detects the giver icon (two-frame consensus over the validated icon templates), reads the title with giver-scoped constrained OCR, classifies the objective completion bars, then toggles the log closed and releases all inputs. The scanner runs as an exclusive cancellable engine worker; Stop, the hard emergency stop, focus loss, or its 60-second deadline prevent further clicks and release the local input broker. The result is advisory: it recommends fields only when the detected bar count aligns exactly with the matched quest, and reports every uncertain reading as a note. Dynamic givers (Brown Bear) are reported as held work until the dynamic-objective reader is live-validated.
+
+The planner remains advisory: the scan can surface evidence-backed field recommendations, but it cannot start travel or native quest execution. Broader live quest parity remains fixture- and soak-gated; the catalog alone is not evidence of end-to-end automation.

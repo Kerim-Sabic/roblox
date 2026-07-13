@@ -30,6 +30,8 @@ This checks 390 generated variants (91 routes x walk/cannon x new/legacy walk, 1
 
 ## Orchestrated sessions
 
+The profile's `automation.collect` list schedules only the imported wealth clock, free dispenser, and field-booster routes on per-target cooldowns. The mapping is an exact allowlist of manifest file names; it never constructs an arbitrary `gtc-*` path. Wind Shrine, stickers, blender, honeystorm, passes, memory matches, and seasonal routes are rejected even if a profile trusts their legacy scripts. Due targets run at session cycle boundaries — never mid-pattern — and each successful collect is followed by the reset step so the next step starts at the hive. Last-run timestamps are isolated by profile and persist in the daemon database. An unreadable or unwritable cooldown record faults the session instead of risking a repeated collection.
+
 `StartLegacySession` turns the profile's saved field rotation into a supervised loop of individually trusted steps: travel route → gather pattern (repeated) → builtin reset/convert (Natro's own `nm_Reset` + ramp walk + prompt-checked Make Honey press). The engine preflights every unique asset before the first step, emits per-step progress and outcomes, honors pause (the harness F16 handler releases and restores held keys), enforces cycle and wall-clock limits, and records a run-history row plus a redacted JSON report. On a failed step with reconnect enabled, the daemon confirms the legacy disconnect dialog (or a fully absent client), rejoins through the DPAPI-encrypted `private_server_link` secret, and re-anchors with the reset step; anything ambiguous ends the session as needs-attention instead of guessing.
 
 ## Consent and containment

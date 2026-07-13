@@ -15,7 +15,7 @@ pub mod transport;
 
 pub use engine::{
     AutomationBackend, AutomationEngine, AutomationError, LegacyExecutionPort, MockBackend,
-    SecretPort, TaskContext,
+    QuestScanPort, SecretPort, TaskContext,
 };
 pub use perception::{
     FieldCandidate, HiveCandidate, HiveState, LivePerception, MovementTarget, PromptCandidate,
@@ -23,8 +23,9 @@ pub use perception::{
 };
 pub use persistence::SqliteStore;
 pub use session::{
-    BUILTIN_APPROVAL, BUILTIN_RESET_SCRIPT_ID, SessionPlanError, SessionStep, SessionStepKind,
-    build_session_plan, validate_session_limits,
+    BUILTIN_APPROVAL, BUILTIN_RESET_SCRIPT_ID, CollectStep, SessionPlanError, SessionStep,
+    SessionStepKind, build_collect_steps, build_session_plan, is_supported_legacy_field,
+    is_supported_legacy_pattern, validate_session_limits,
 };
 pub use tasks::{
     DetectedTarget, DetectionRequirement, GuardedTask, TaskAction, TaskControl, TaskKind, TaskPlan,

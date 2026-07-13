@@ -37,11 +37,11 @@ export function RunControls({
           aria-label={
             startBlocked
               ? `Start unavailable: ${startBlockedReason ?? "readiness checks are incomplete"}`
-              : "Start macro"
+              : "Start the saved gather plan"
           }
         >
           <CirclePlay size={17} />
-          Start
+          Start plan
           {!compact && <kbd>F1</kbd>}
         </button>
       ) : (

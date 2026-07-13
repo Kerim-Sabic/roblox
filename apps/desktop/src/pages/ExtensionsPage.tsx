@@ -188,18 +188,28 @@ export function ExtensionsPage({
                     <Box size={14} /> Native conversion preview
                   </span>
                 ) : extension.executionMode === "legacy_bridge" ? (
-                  <button
-                    className="button button-secondary button-small"
-                    disabled={pendingAction !== null}
-                    onClick={() =>
-                      void actions.runLegacyExtension(
-                        extension.id,
-                        extension.digest,
-                      )
-                    }
-                  >
-                    <Play size={14} /> Run contained script
-                  </button>
+                  <>
+                    <button
+                      className="button button-secondary button-small"
+                      disabled={pendingAction !== null}
+                      title="Shows the exact generated harness this asset would run"
+                      onClick={() => void actions.inspectLegacy(extension.id)}
+                    >
+                      Preview harness
+                    </button>
+                    <button
+                      className="button button-secondary button-small"
+                      disabled={pendingAction !== null}
+                      onClick={() =>
+                        void actions.runLegacyExtension(
+                          extension.id,
+                          extension.digest,
+                        )
+                      }
+                    >
+                      <Play size={14} /> Run contained script
+                    </button>
+                  </>
                 ) : (
                   <label
                     className="switch-only"
@@ -225,6 +235,36 @@ export function ExtensionsPage({
           </div>
         )}
       </section>
+      {snapshot.legacyInspection && (
+        <section className="panel legacy-inspection">
+          <header className="panel-header">
+            <div>
+              <span className="eyebrow">Generated harness preview</span>
+              <h2>{snapshot.legacyInspection.scriptId}</h2>
+            </div>
+          </header>
+          <dl className="legacy-inspection-meta">
+            <div>
+              <dt>Pinned asset size</dt>
+              <dd>{snapshot.legacyInspection.bytes} bytes</dd>
+            </div>
+            <div>
+              <dt>Pinned asset SHA-256</dt>
+              <dd>
+                <code>{snapshot.legacyInspection.sha256}</code>
+              </dd>
+            </div>
+          </dl>
+          <p>
+            The metadata above identifies the exact pinned source asset. The
+            preview below is the complete generated harness that would execute:
+            that asset wrapped in Natro&apos;s walk environment.
+          </p>
+          <pre className="legacy-harness-preview">
+            {snapshot.legacyInspection.harnessPreview}
+          </pre>
+        </section>
+      )}
       {reviewing && (
         <div className="dialog-backdrop">
           <div

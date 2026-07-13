@@ -198,7 +198,11 @@ export function OverviewPage({
                   {check.actionLabel && (
                     <button
                       className="tiny-button"
-                      onClick={() => onNavigate("settings")}
+                      onClick={() =>
+                        onNavigate(
+                          check.id === "gather-plan" ? "gather" : "settings",
+                        )
+                      }
                     >
                       {check.actionLabel}
                     </button>

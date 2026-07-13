@@ -44,6 +44,8 @@
     "externalBin": ["binaries/nectarpilot-daemon"],
     "resources": {
       "../../../assets/": "assets/",
+      "../../../lib/": "lib/",
+      "../../../nm_image_assets/": "nm_image_assets/",
       "../../../paths/": "paths/",
       "../../../patterns/": "patterns/",
       "../../../submacros/AutoHotkey64.exe": "AutoHotkey64.exe"
@@ -59,13 +61,17 @@
     "shortDescription": "Safety-first Bee Swarm Simulator automation dashboard",
     "longDescription": "A GPLv3 screen-and-input automation dashboard rebuilt from Natro Macro.",
     "createUpdaterArtifacts": true,
+    "licenseFile": "../../../LICENSE.md",
     "windows": {
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       },
       "nsis": {
         "installMode": "currentUser",
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp"
       }
     }
   }

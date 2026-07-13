@@ -17,6 +17,7 @@ export interface NectarService {
   getSnapshot(): Promise<DashboardSnapshot>;
   subscribe(listener: SnapshotListener): () => void;
   start(profileId: string): Promise<void>;
+  acknowledgeAttention(profileId: string): Promise<void>;
   pause(profileId: string): Promise<void>;
   stop(profileId: string): Promise<void>;
   emergencyStop(profileId: string): Promise<void>;
@@ -39,6 +40,7 @@ export interface NectarService {
     maxMinutes: number,
   ): Promise<void>;
   inspectLegacy(profileId: string, scriptId: string): Promise<void>;
+  scanQuests(profileId: string): Promise<void>;
   setCompactMode(compact: boolean): Promise<void>;
 }
 
@@ -91,10 +93,11 @@ export class TauriNectarService implements NectarService {
   }
 
   start(profileId: string) {
-    return this.dispatch(profileId, {
-      type: "start",
-      payload: { mode: "normal" },
-    });
+    return invoke<void>("start_configured_session", { profileId });
+  }
+
+  acknowledgeAttention(profileId: string) {
+    return invoke<void>("acknowledge_attention", { profileId });
   }
 
   pause(profileId: string) {
@@ -145,6 +148,10 @@ export class TauriNectarService implements NectarService {
 
   inspectLegacy(profileId: string, scriptId: string) {
     return invoke<void>("inspect_legacy", { profileId, scriptId });
+  }
+
+  scanQuests(profileId: string) {
+    return invoke<void>("scan_quests", { profileId });
   }
 
   async setCompactMode(compact: boolean): Promise<void> {
@@ -216,6 +223,23 @@ export class MockNectarService implements NectarService {
     }, 650);
   }
 
+  async acknowledgeAttention(): Promise<void> {
+    this.snapshot.safeMode = false;
+    if (
+      this.snapshot.runState === "Faulted" ||
+      this.snapshot.runState === "NeedsAttention"
+    ) {
+      this.snapshot.runState = "Idle";
+      this.snapshot.runStateReason = "Attention acknowledged";
+    }
+    this.addTimeline(
+      "Attention acknowledged",
+      "Safe mode and recovery notices were cleared in the preview.",
+      "info",
+    );
+    this.publish();
+  }
+
   async pause(): Promise<void> {
     this.snapshot.runState =
       this.snapshot.runState === "Paused" ? "Running" : "Paused";
@@ -260,6 +284,11 @@ export class MockNectarService implements NectarService {
     if (!this.snapshot.profiles.some((profile) => profile.id === profileId))
       return;
     this.snapshot.activeProfileId = profileId;
+    this.snapshot.runHistory = (this.snapshot.runHistory ?? []).filter(
+      (record) => record.profileId === profileId,
+    );
+    this.snapshot.legacyInspection = null;
+    this.snapshot.questScan = null;
     const profile = this.snapshot.profiles.find(
       (item) => item.id === profileId,
     ) as Profile;
@@ -349,6 +378,15 @@ export class MockNectarService implements NectarService {
       "Legacy session requested",
       `Field rotation loop for up to ${maxCycles} cycles / ${maxMinutes} minutes`,
       "warning",
+    );
+    this.publish();
+  }
+
+  async scanQuests(): Promise<void> {
+    this.addTimeline(
+      "Quest scan requested",
+      "The daemon opens the quest log with verified clicks and reads it",
+      "info",
     );
     this.publish();
   }

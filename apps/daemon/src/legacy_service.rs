@@ -189,12 +189,17 @@ pub struct LegacyCompatibilityService {
     adopted_client: Arc<Mutex<Option<AdoptedRobloxClient>>>,
 }
 
+/// The resolved legacy compatibility root: `NECTARPILOT_LEGACY_ROOT` when
+/// explicitly set, otherwise the compile-time repository root — never the
+/// process working directory.
+pub fn compatibility_root() -> PathBuf {
+    env::var_os(LEGACY_ROOT_ENV).map_or_else(safe_development_root, PathBuf::from)
+}
+
 impl LegacyCompatibilityService {
-    /// Builds the service from `NECTARPILOT_LEGACY_ROOT` when it is explicitly set.
-    /// Otherwise it uses the compile-time repository root, never the process CWD.
+    /// Builds the service from [`compatibility_root`].
     pub fn from_environment() -> Result<Self, LegacyCompatibilityError> {
-        let root = env::var_os(LEGACY_ROOT_ENV).map_or_else(safe_development_root, PathBuf::from);
-        Self::from_root(root)
+        Self::from_root(compatibility_root())
     }
 
     /// Builds the service from a packaged resource root or a controlled test root.
@@ -685,9 +690,28 @@ impl LegacyCompatibilityService {
     fn require_foreground_roblox(&self) -> Result<(), LegacyCompatibilityError> {
         let clients = discover_roblox_clients()
             .map_err(|error| LegacyCompatibilityError::RobloxDiscovery(error.to_string()))?;
-        let snapshot = exact_single_snapshot(&clients)?;
+        let mut snapshot = exact_single_snapshot(&clients)?;
         if snapshot.geometry.minimized || !snapshot.is_foreground {
-            return Err(LegacyCompatibilityError::RobloxClientNotForeground);
+            // Every run is triggered from the NectarPilot window, so Roblox is
+            // never foreground at this moment. Activate it exactly as the
+            // legacy macro's ActivateRoblox did, then re-verify fail-closed.
+            let _ = nectarpilot_platform::bring_window_to_foreground(snapshot.target.window);
+            let mut activated = false;
+            for _attempt in 0..4 {
+                std::thread::sleep(Duration::from_millis(150));
+                let clients = discover_roblox_clients().map_err(|error| {
+                    LegacyCompatibilityError::RobloxDiscovery(error.to_string())
+                })?;
+                let refreshed = exact_single_snapshot(&clients)?;
+                if !refreshed.geometry.minimized && refreshed.is_foreground {
+                    snapshot = refreshed;
+                    activated = true;
+                    break;
+                }
+            }
+            if !activated {
+                return Err(LegacyCompatibilityError::RobloxClientNotForeground);
+            }
         }
         self.store_or_verify_adoption(snapshot)
     }

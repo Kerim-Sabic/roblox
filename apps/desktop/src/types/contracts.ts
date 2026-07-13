@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = 1 as const;
+export const PROTOCOL_VERSION = 2 as const;
 
 export type RunState =
   | "Idle"
@@ -161,6 +161,35 @@ export interface StatMetric {
   tone?: "gold" | "green" | "blue" | "neutral";
 }
 
+export interface RunHistoryEntry {
+  runId: string;
+  profileId: string;
+  kind: string;
+  startedAt: string;
+  finishedAt: string;
+  finalState: string;
+  summary: string;
+  stepsSucceeded: number;
+  stepsFailed: number;
+}
+
+export interface QuestScanView {
+  scannedAt: string;
+  giver: string | null;
+  questId: string | null;
+  questName: string | null;
+  barsComplete: boolean[];
+  recommendedFields: string[];
+  notes: string[];
+}
+
+export interface LegacyInspectionView {
+  scriptId: string;
+  sha256: string;
+  bytes: number;
+  harnessPreview: string;
+}
+
 export interface PlannedTask {
   id: string;
   label: string;
@@ -221,6 +250,9 @@ export interface DashboardSnapshot {
   session: SessionInfo;
   readiness: ReadinessCheck[];
   metrics: StatMetric[];
+  runHistory?: RunHistoryEntry[];
+  legacyInspection?: LegacyInspectionView | null;
+  questScan?: QuestScanView | null;
   timeline: TimelineEntry[];
   queue: PlannedTask[];
   features: FeatureCard[];

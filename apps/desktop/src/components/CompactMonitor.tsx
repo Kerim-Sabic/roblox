@@ -73,7 +73,8 @@ export function CompactMonitor({
         startBlocked={
           snapshot.safeMode ||
           snapshot.readiness.some(
-            (check) => check.status === "blocked" || check.status === "checking",
+            (check) =>
+              check.status === "blocked" || check.status === "checking",
           )
         }
         startBlockedReason="Open the dashboard and resolve readiness checks before starting"
