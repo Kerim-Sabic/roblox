@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title description">
+  <title id="title">NectarPilot</title>
+  <desc id="description">An animated honey-gold route and NectarPilot navigation mark</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#100e0b"/><stop offset=".55" stop-color="#1b1710"/><stop offset="1" stop-color="#241908"/>
+    </linearGradient>
+    <linearGradient id="honey" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1b6"/><stop offset=".42" stop-color="#ffd76a"/><stop offset="1" stop-color="#e99412"/>
+    </linearGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#f4b942" stop-opacity=".34"/><stop offset="1" stop-color="#f4b942" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="74" height="64" patternUnits="userSpaceOnUse">
+      <path d="M37 2 70 20v24L37 62 4 44V20Z" fill="none" stroke="#ffd76a" stroke-opacity=".055" stroke-width="1.5"/>
+    </pattern>
+    <filter id="soft-glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="panel-clip"><rect x="1" y="1" width="1598" height="558" rx="38"/></clipPath>
+    <style>
+      .route{animation:route-flow 12s linear infinite}.pulse-a{animation:pulse 4.8s ease-in-out infinite}.pulse-b{animation:pulse 4.8s 1.6s ease-in-out infinite}.pulse-c{animation:pulse 4.8s 3.2s ease-in-out infinite}.needle{transform-box:fill-box;transform-origin:center;animation:needle-drift 9s ease-in-out infinite}.signal{animation:signal 3.6s ease-in-out infinite}
+      @keyframes route-flow{to{stroke-dashoffset:-280}}@keyframes pulse{0%,100%{opacity:.32;transform:scale(.93)}50%{opacity:1;transform:scale(1)}}@keyframes needle-drift{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}@keyframes signal{0%,100%{opacity:.45}50%{opacity:1}}
+      @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+    </style>
+  </defs>
+  <rect x="1" y="1" width="1598" height="558" rx="38" fill="url(#background)" stroke="#3b2b12" stroke-width="2"/>
+  <g clip-path="url(#panel-clip)">
+    <rect width="1600" height="560" fill="url(#grid)"/><ellipse cx="1320" cy="92" rx="430" ry="300" fill="url(#glow)"/><ellipse cx="226" cy="510" rx="360" ry="230" fill="url(#glow)" opacity=".5"/>
+    <path d="M842 414C960 340 976 190 1110 220s160 194 328 60" fill="none" stroke="#fff1b6" stroke-opacity=".12" stroke-width="17" stroke-linecap="round"/>
+    <path class="route" d="M842 414C960 340 976 190 1110 220s160 194 328 60" fill="none" stroke="#f4b942" stroke-opacity=".85" stroke-width="5" stroke-linecap="round" stroke-dasharray="18 18"/>
+    <g class="pulse-a" style="transform-origin:842px 414px"><circle cx="842" cy="414" r="16" fill="#17140f" stroke="#ffd76a" stroke-width="4"/><circle cx="842" cy="414" r="5" fill="#fff1b6"/></g>
+    <g class="pulse-b" style="transform-origin:1110px 220px"><circle cx="1110" cy="220" r="16" fill="#17140f" stroke="#ffd76a" stroke-width="4"/><circle cx="1110" cy="220" r="5" fill="#fff1b6"/></g>
+    <g class="pulse-c" style="transform-origin:1438px 280px"><circle cx="1438" cy="280" r="16" fill="#17140f" stroke="#ffd76a" stroke-width="4"/><circle cx="1438" cy="280" r="5" fill="#fff1b6"/></g>
+    <g transform="translate(1080 74)">
+      <path d="M240 12 414 112v202L240 414 66 314V112Z" fill="#17140f" fill-opacity=".76" stroke="url(#honey)" stroke-width="26"/>
+      <g class="needle"><path d="m294 112-52 116-116 52 112 11 11 111 52-116 116-52-112-11Z" fill="url(#honey)" stroke="#fff1b6" stroke-width="7" stroke-linejoin="round"/><circle cx="243" cy="256" r="26" fill="#17140f" stroke="#fff1b6" stroke-width="8"/></g>
+    </g>
+    <g font-family="Segoe UI,Inter,Arial,sans-serif">
+      <text x="92" y="116" fill="#f4b942" font-size="20" font-weight="700" letter-spacing="5">SAFETY-FIRST WINDOWS AUTOMATION</text>
+      <text x="88" y="226" fill="#fffaf0" font-size="92" font-weight="800" letter-spacing="-3">NectarPilot</text>
+      <text x="94" y="286" fill="#d9cdb9" font-size="29">A modern control center for Bee Swarm Simulator automation.</text>
+      <g transform="translate(94 356)"><rect width="204" height="68" rx="18" fill="#fff" fill-opacity=".055" stroke="#fff" stroke-opacity=".1"/><text x="22" y="28" fill="#fff1b6" font-size="13" font-weight="700" letter-spacing="2">LEGACY CATALOG</text><text x="22" y="53" fill="#fffaf0" font-size="20" font-weight="700">103 assets</text></g>
+      <g transform="translate(314 356)"><rect width="238" height="68" rx="18" fill="#fff" fill-opacity=".055" stroke="#fff" stroke-opacity=".1"/><text x="22" y="28" fill="#fff1b6" font-size="13" font-weight="700" letter-spacing="2">HARNESS VALIDATION</text><text x="22" y="53" fill="#fffaf0" font-size="20" font-weight="700">390 variants pass</text></g>
+      <g transform="translate(568 356)"><rect width="200" height="68" rx="18" fill="#fff" fill-opacity=".055" stroke="#fff" stroke-opacity=".1"/><circle class="signal" cx="24" cy="24" r="7" fill="#f4b942" filter="url(#soft-glow)"/><text x="42" y="29" fill="#fff1b6" font-size="13" font-weight="700" letter-spacing="2">STATUS</text><text x="22" y="53" fill="#fffaf0" font-size="20" font-weight="700">Pre-beta</text></g>
+    </g>
+  </g>
+</svg>
