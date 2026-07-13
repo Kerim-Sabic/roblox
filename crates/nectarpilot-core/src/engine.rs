@@ -498,15 +498,25 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 Ok(())
             }
             Command::AcknowledgeAttention => {
-                if !matches!(self.state(), RunState::NeedsAttention | RunState::Faulted) {
+                let state = self.state();
+                let safe_mode = self.inner.safe_mode.load(Ordering::SeqCst);
+                if !safe_mode && !matches!(state, RunState::NeedsAttention | RunState::Faulted) {
                     return Err(AutomationError::InvalidState {
-                        current: self.state(),
+                        current: state,
                         command: "acknowledge_attention",
                     });
                 }
                 self.inner.safe_mode.store(false, Ordering::SeqCst);
                 self.inner.store.set_runtime_value("safe_mode", "false")?;
-                self.transition(RunState::Idle, "attention acknowledged");
+                self.inner.crash_guard.lock().clear();
+                self.inner
+                    .store
+                    .set_runtime_value("daemon_crash_timestamps", "[]")?;
+                if state == RunState::Idle {
+                    self.emit(DaemonEvent::Snapshot(self.snapshot()));
+                } else {
+                    self.transition(RunState::Idle, "attention acknowledged");
+                }
                 Ok(())
             }
         }
@@ -2276,7 +2286,7 @@ mod tests {
         assert_eq!(legacy.recoveries.load(Ordering::SeqCst), 1);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
     async fn gather_repeats_until_its_duration_then_runs_reset() {
         let directory = tempdir().expect("temp directory");
         let store =
@@ -2302,8 +2312,51 @@ mod tests {
             ))
             .await
             .expect("start session");
-        wait_for_state(&engine, RunState::Running).await;
-        wait_for_state(&engine, RunState::Idle).await;
+
+        // Drive the timed gather with Tokio's virtual clock rather than
+        // depending on host scheduling.  The old real-time fixture could
+        // occasionally fit only one 200 ms pattern into its one-second
+        // window under a contended CI worker, which made a behavioral
+        // assertion flaky.
+        for expected_patterns in 1..=3 {
+            for _ in 0..100 {
+                let started = legacy
+                    .calls()
+                    .iter()
+                    .filter(|script_id| script_id.contains("legacy:pattern:"))
+                    .count();
+                if started >= expected_patterns {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+            let started = legacy
+                .calls()
+                .iter()
+                .filter(|script_id| script_id.contains("legacy:pattern:"))
+                .count();
+            assert!(
+                started >= expected_patterns,
+                "pattern {expected_patterns} did not start: {:?}",
+                legacy.calls()
+            );
+            tokio::time::advance(Duration::from_millis(200)).await;
+            tokio::task::yield_now().await;
+        }
+        // Advance precisely to the field deadline.  The worker must stop the
+        // timed gather and execute its reset step without relying on wall time.
+        tokio::time::advance(Duration::from_millis(400)).await;
+        for _ in 0..100 {
+            if engine.state() == RunState::Idle {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            engine.state(),
+            RunState::Idle,
+            "timed session did not finish"
+        );
 
         let calls = legacy.calls();
         let patterns = calls
@@ -2727,5 +2780,46 @@ mod tests {
         let restarted = AutomationEngine::new(Arc::new(MockBackend::default()), store)
             .expect("restarted engine");
         assert!(restarted.snapshot().safe_mode);
+    }
+
+    #[tokio::test]
+    async fn persisted_safe_mode_can_be_acknowledged_while_idle() {
+        let directory = tempdir().expect("temp directory");
+        let store = Arc::new(
+            SqliteStore::open(directory.path().join("db.sqlite3")).expect("persistent store"),
+        );
+        let now = Utc::now();
+        {
+            let engine =
+                AutomationEngine::new(Arc::new(MockBackend::default()), Arc::clone(&store))
+                    .expect("engine");
+            for _ in 0..3 {
+                engine.record_daemon_crash(now).expect("record crash");
+            }
+        }
+
+        let restarted = AutomationEngine::new(Arc::new(MockBackend::default()), Arc::clone(&store))
+            .expect("restarted engine");
+        assert_eq!(restarted.state(), RunState::Idle);
+        assert!(restarted.snapshot().safe_mode);
+        let profile_id = restarted.snapshot().profile_id;
+        restarted
+            .handle_command(CommandEnvelope::new(
+                profile_id,
+                Command::AcknowledgeAttention,
+            ))
+            .await
+            .expect("acknowledge persisted safe mode");
+        assert!(!restarted.snapshot().safe_mode);
+        assert_eq!(
+            store.runtime_value("safe_mode").expect("safe mode value"),
+            Some("false".into())
+        );
+        assert_eq!(
+            store
+                .runtime_value("daemon_crash_timestamps")
+                .expect("crash history value"),
+            Some("[]".into())
+        );
     }
 }

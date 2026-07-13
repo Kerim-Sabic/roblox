@@ -2408,6 +2408,7 @@ dependencies = [
  "chrono",
  "nectarpilot-contracts",
  "nectarpilot-core",
+ "nectarpilot-legacy",
  "nectarpilot-platform",
  "serde",
  "serde_json",

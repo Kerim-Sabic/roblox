@@ -92,6 +92,7 @@ impl QuestScanPort for QuestScanService {
 #[cfg(windows)]
 mod windows_scan {
     use std::path::Path;
+    use std::thread::sleep;
     use std::time::Duration;
 
     use chrono::Utc;
@@ -135,10 +136,34 @@ mod windows_scan {
                 visible.len()
             ));
         };
+        let mut snapshot = *snapshot;
         if snapshot.geometry.minimized || !snapshot.is_foreground {
-            return Err("the Roblox client must be foreground and restored".into());
+            // The scan button focuses the NectarPilot window; activate the
+            // game first, exactly as the legacy macro's ActivateRoblox did,
+            // then re-verify fail-closed before any click is sent.
+            let _ = nectarpilot_platform::bring_window_to_foreground(snapshot.target.window);
+            let mut activated = false;
+            for _attempt in 0..4 {
+                sleep(Duration::from_millis(150));
+                let refreshed = discover_roblox_clients()
+                    .map_err(|error| error.to_string())?
+                    .into_iter()
+                    .filter_map(|client| client.window)
+                    .find(|candidate| candidate.target == snapshot.target);
+                if let Some(refreshed) = refreshed
+                    && !refreshed.geometry.minimized
+                    && refreshed.is_foreground
+                {
+                    snapshot = refreshed;
+                    activated = true;
+                    break;
+                }
+            }
+            if !activated {
+                return Err("the Roblox client must be foreground and restored".into());
+            }
         }
-        let session = RobloxSession::from_snapshot(*snapshot);
+        let session = RobloxSession::from_snapshot(snapshot);
         let target = session.target();
 
         // Pinned open-state template from the imported general bitmaps.

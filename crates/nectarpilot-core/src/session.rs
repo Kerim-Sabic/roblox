@@ -95,11 +95,9 @@ pub fn build_session_plan(profile: &Profile) -> Result<Vec<SessionStep>, Session
                 seconds: rotation.gather_seconds,
             });
         }
-        let field_slug = asset_slug(&rotation.field);
-        if field_slug.is_empty() || field_slug.len() > 32 {
-            return Err(SessionPlanError::InvalidField(rotation.field.clone()));
-        }
-        let route_id = format!("legacy:route:paths/gtf-{field_slug}.ahk");
+        let route_file = field_route(&rotation.field)
+            .ok_or_else(|| SessionPlanError::InvalidField(rotation.field.clone()))?;
+        let route_id = format!("legacy:route:paths/{route_file}");
         let route_sha = trusted_digest(profile, &route_id)
             .ok_or_else(|| SessionPlanError::NotTrusted(route_id.clone()))?;
         steps.push(SessionStep {
@@ -111,10 +109,8 @@ pub fn build_session_plan(profile: &Profile) -> Result<Vec<SessionStep>, Session
             description: format!("Travel to {}", rotation.field),
         });
 
-        let pattern_file = pattern_file_name(&rotation.pattern);
-        if pattern_file.is_empty() || pattern_file.len() > 48 {
-            return Err(SessionPlanError::InvalidPattern(rotation.pattern.clone()));
-        }
+        let pattern_file = pattern_file_name(&rotation.pattern)
+            .ok_or_else(|| SessionPlanError::InvalidPattern(rotation.pattern.clone()))?;
         let pattern_id = format!("legacy:pattern:patterns/{pattern_file}.ahk");
         let (pattern_id, pattern_sha) = if let Some(sha) = trusted_digest(profile, &pattern_id) {
             (pattern_id, sha)
@@ -251,6 +247,41 @@ fn trusted_digest(profile: &Profile, asset_id: &str) -> Option<String> {
     profile.trusted_extensions.get(asset_id).cloned()
 }
 
+/// Maps the display names accepted by the desktop and legacy INI importer to
+/// the exact route file names pinned in the bundled manifest. This is an
+/// allowlist rather than a general `gtf-<slug>` constructor so a profile can
+/// never turn arbitrary text into an executable path.
+fn field_route(field: &str) -> Option<&'static str> {
+    match asset_slug(field).as_str() {
+        "bamboo" | "bamboofield" => Some("gtf-bamboo.ahk"),
+        "blueflower" | "blueflowerfield" => Some("gtf-blueflower.ahk"),
+        "cactus" | "cactusfield" => Some("gtf-cactus.ahk"),
+        "clover" | "cloverfield" => Some("gtf-clover.ahk"),
+        "coconut" | "coconutfield" => Some("gtf-coconut.ahk"),
+        "dandelion" | "dandelionfield" => Some("gtf-dandelion.ahk"),
+        "mountaintop" | "mountaintopfield" => Some("gtf-mountaintop.ahk"),
+        "mushroom" | "mushroomfield" => Some("gtf-mushroom.ahk"),
+        "pepper" | "pepperpatch" | "pepperfield" => Some("gtf-pepper.ahk"),
+        "pineapple" | "pineapplepatch" | "pineapplefield" => Some("gtf-pineapple.ahk"),
+        "pinetree" | "pinetreeforest" | "pineforest" => Some("gtf-pinetree.ahk"),
+        "pumpkin" | "pumpkinpatch" | "pumpkinfield" => Some("gtf-pumpkin.ahk"),
+        "rose" | "rosefield" => Some("gtf-rose.ahk"),
+        "spider" | "spiderfield" => Some("gtf-spider.ahk"),
+        "strawberry" | "strawberryfield" => Some("gtf-strawberry.ahk"),
+        "stump" | "stumpfield" => Some("gtf-stump.ahk"),
+        "sunflower" | "sunflowerfield" => Some("gtf-sunflower.ahk"),
+        _ => None,
+    }
+}
+
+/// Returns whether a display field name resolves to one of the exact bundled
+/// legacy gather routes. Desktop forms use this to reject a typo before it can
+/// overwrite a profile; execution performs the same check again.
+#[must_use]
+pub fn is_supported_legacy_field(field: &str) -> bool {
+    field_route(field).is_some()
+}
+
 /// `"Blue Flower"` -> `blueflower`, matching Natro's `StrReplace(name, " ")`.
 fn asset_slug(name: &str) -> String {
     name.chars()
@@ -259,12 +290,32 @@ fn asset_slug(name: &str) -> String {
         .collect()
 }
 
-/// Pattern files keep their imported casing (`Snake.ahk`, `e_lol.ahk`); keep
-/// the name as-is minus anything path-like.
-fn pattern_file_name(name: &str) -> String {
-    name.chars()
-        .filter(|character| character.is_ascii_alphanumeric() || *character == '_')
-        .collect()
+/// Maps friendly pattern names to the exact legacy bridge file names. The
+/// converted `Stationary` asset intentionally does not appear here: it is a
+/// native-preview DSL asset and cannot be sent to the compatibility worker.
+fn pattern_file_name(name: &str) -> Option<&'static str> {
+    match asset_slug(name).as_str() {
+        "auryn" => Some("Auryn"),
+        "cornerxsnake" => Some("CornerXSnake"),
+        "diamonds" => Some("Diamonds"),
+        "elol" => Some("e_lol"),
+        "fork" => Some("Fork"),
+        "lines" => Some("Lines"),
+        "slimline" => Some("Slimline"),
+        "snake" => Some("Snake"),
+        "squares" => Some("Squares"),
+        "supercat" => Some("SuperCat"),
+        "xsnake" => Some("XSnake"),
+        _ => None,
+    }
+}
+
+/// Returns whether a pattern resolves to an executable legacy bridge asset.
+/// The safe-DSL Stationary preview deliberately returns false until a native
+/// executor is installed.
+#[must_use]
+pub fn is_supported_legacy_pattern(pattern: &str) -> bool {
+    pattern_file_name(pattern).is_some()
 }
 
 #[cfg(test)]
@@ -322,6 +373,43 @@ mod tests {
         profile.automation.rotations[0].pattern = "snake".into();
         let plan = build_session_plan(&profile).expect("plan");
         assert_eq!(plan[1].script_id, "legacy:pattern:patterns/Snake.ahk");
+    }
+
+    #[test]
+    fn field_aliases_resolve_to_exact_pinned_route_names() {
+        let manifest = include_str!("../../../assets/routes/_legacy-manifest.yaml");
+        for (label, file) in [
+            ("Bamboo Field", "gtf-bamboo.ahk"),
+            ("Blue Flower Field", "gtf-blueflower.ahk"),
+            ("Cactus Field", "gtf-cactus.ahk"),
+            ("Clover Field", "gtf-clover.ahk"),
+            ("Coconut Field", "gtf-coconut.ahk"),
+            ("Dandelion Field", "gtf-dandelion.ahk"),
+            ("Mountain Top Field", "gtf-mountaintop.ahk"),
+            ("Mushroom Field", "gtf-mushroom.ahk"),
+            ("Pepper Patch", "gtf-pepper.ahk"),
+            ("Pineapple Patch", "gtf-pineapple.ahk"),
+            ("Pine Tree Forest", "gtf-pinetree.ahk"),
+            ("Pumpkin Patch", "gtf-pumpkin.ahk"),
+            ("Rose Field", "gtf-rose.ahk"),
+            ("Spider Field", "gtf-spider.ahk"),
+            ("Strawberry Field", "gtf-strawberry.ahk"),
+            ("Stump Field", "gtf-stump.ahk"),
+            ("Sunflower Field", "gtf-sunflower.ahk"),
+        ] {
+            assert_eq!(field_route(label), Some(file));
+            assert!(manifest.contains(&format!("legacy_source: paths/{file}")));
+        }
+        assert_eq!(field_route("Pine Tree"), Some("gtf-pinetree.ahk"));
+        assert_eq!(field_route("not a field"), None);
+    }
+
+    #[test]
+    fn pattern_aliases_use_exact_legacy_bridge_names() {
+        assert_eq!(pattern_file_name("cornerxsnake"), Some("CornerXSnake"));
+        assert_eq!(pattern_file_name("e_lol"), Some("e_lol"));
+        assert_eq!(pattern_file_name("SuperCat"), Some("SuperCat"));
+        assert_eq!(pattern_file_name("Stationary"), None);
     }
 
     #[test]

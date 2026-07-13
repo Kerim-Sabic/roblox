@@ -1316,6 +1316,23 @@
   .rotation-panel {
     padding: 14px;
   }
+  .field-add-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-add-control select {
+    min-width: 146px;
+    max-width: 190px;
+    min-height: 30px;
+    padding: 0 25px 0 9px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-muted);
+    color: var(--text);
+    font: inherit;
+    font-size: 10px;
+  }
   .field-rotation-list {
     display: flex;
     flex-direction: column;

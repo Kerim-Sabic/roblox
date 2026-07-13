@@ -17,6 +17,7 @@ export interface NectarService {
   getSnapshot(): Promise<DashboardSnapshot>;
   subscribe(listener: SnapshotListener): () => void;
   start(profileId: string): Promise<void>;
+  acknowledgeAttention(profileId: string): Promise<void>;
   pause(profileId: string): Promise<void>;
   stop(profileId: string): Promise<void>;
   emergencyStop(profileId: string): Promise<void>;
@@ -92,10 +93,11 @@ export class TauriNectarService implements NectarService {
   }
 
   start(profileId: string) {
-    return this.dispatch(profileId, {
-      type: "start",
-      payload: { mode: "normal" },
-    });
+    return invoke<void>("start_configured_session", { profileId });
+  }
+
+  acknowledgeAttention(profileId: string) {
+    return invoke<void>("acknowledge_attention", { profileId });
   }
 
   pause(profileId: string) {
@@ -219,6 +221,23 @@ export class MockNectarService implements NectarService {
       );
       this.publish();
     }, 650);
+  }
+
+  async acknowledgeAttention(): Promise<void> {
+    this.snapshot.safeMode = false;
+    if (
+      this.snapshot.runState === "Faulted" ||
+      this.snapshot.runState === "NeedsAttention"
+    ) {
+      this.snapshot.runState = "Idle";
+      this.snapshot.runStateReason = "Attention acknowledged";
+    }
+    this.addTimeline(
+      "Attention acknowledged",
+      "Safe mode and recovery notices were cleared in the preview.",
+      "info",
+    );
+    this.publish();
   }
 
   async pause(): Promise<void> {

@@ -314,6 +314,46 @@ impl InputSink for WindowsInputSink {
     }
 }
 
+/// Brings the exact window to the foreground, restoring it if minimized —
+/// the native equivalent of the legacy macro's `ActivateRoblox()`. Windows
+/// only lets a background process steal foreground after attaching to the
+/// current foreground thread's input queue, so that fallback is attempted
+/// before reporting failure. Returns whether the window is now foreground;
+/// callers keep their fail-closed foreground checks either way.
+#[must_use]
+pub fn bring_window_to_foreground(window: WindowHandle) -> bool {
+    use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+    use windows::Win32::UI::WindowsAndMessaging::{SW_RESTORE, SetForegroundWindow, ShowWindow};
+
+    let hwnd = to_hwnd(window);
+    // SAFETY: read-only window queries and standard activation calls on a
+    // caller-supplied handle; every call tolerates a stale handle.
+    unsafe {
+        if !IsWindow(Some(hwnd)).as_bool() {
+            return false;
+        }
+        if IsIconic(hwnd).as_bool() {
+            let _ = ShowWindow(hwnd, SW_RESTORE);
+        }
+        if GetForegroundWindow() == hwnd {
+            return true;
+        }
+        let _ = SetForegroundWindow(hwnd);
+        if GetForegroundWindow() == hwnd {
+            return true;
+        }
+        let foreground = GetForegroundWindow();
+        let foreground_thread = GetWindowThreadProcessId(foreground, None);
+        let this_thread = GetCurrentThreadId();
+        if foreground_thread != 0 && foreground_thread != this_thread {
+            let _ = AttachThreadInput(this_thread, foreground_thread, true);
+            let _ = SetForegroundWindow(hwnd);
+            let _ = AttachThreadInput(this_thread, foreground_thread, false);
+        }
+        GetForegroundWindow() == hwnd
+    }
+}
+
 /// Sends one global key press/release pair for `virtual_key`. Used only to
 /// toggle the generated walk harness's F16 pause handler — an `AutoHotkey`
 /// hotkey fires regardless of which window has focus, so this deliberately

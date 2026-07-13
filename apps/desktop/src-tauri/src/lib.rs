@@ -189,6 +189,24 @@ async fn start_legacy_session(
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn start_configured_session(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+) -> Result<(), String> {
+    bridge.start_configured_session(profile_id).await
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn acknowledge_attention(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+) -> Result<(), String> {
+    bridge.acknowledge_attention(profile_id).await
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
 async fn inspect_legacy(
     bridge: tauri::State<'_, Arc<DaemonBridge>>,
     profile_id: Uuid,
@@ -257,6 +275,8 @@ pub fn run() {
             trust_extension,
             start_legacy_extension,
             start_legacy_session,
+            start_configured_session,
+            acknowledge_attention,
             inspect_legacy,
             import_secret,
             scan_quests,

@@ -10,6 +10,7 @@ const defaultService = createNectarService();
 export interface NectarActions {
   refreshSession(): Promise<void>;
   start(): Promise<void>;
+  acknowledgeAttention(): Promise<void>;
   pause(): Promise<void>;
   stop(): Promise<void>;
   emergencyStop(): Promise<void>;
@@ -108,6 +109,10 @@ export function useNectarPilot(
         }
       },
       start: () => run("start", (profileId) => service.start(profileId)),
+      acknowledgeAttention: () =>
+        run("acknowledge-attention", (profileId) =>
+          service.acknowledgeAttention(profileId),
+        ),
       pause: () => run("pause", (profileId) => service.pause(profileId)),
       stop: () => run("stop", (profileId) => service.stop(profileId)),
       emergencyStop: () =>
