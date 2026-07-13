@@ -1,0 +1,472 @@
+{
+  "schema_version": 1,
+  "knowledge_version": "natro-v1.1.2-import completion-bar semantics (amount 1 = quest bar complete)",
+  "source_url": "https://github.com/NatroTeam/NatroMacro",
+  "quests": [
+    {
+      "sequence": 1,
+      "id": "polar-aromatic-pie",
+      "giver": "polar_bear",
+      "name": "Aromatic Pie",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        },
+        {
+          "type": "defeat",
+          "mob": "mantis",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "ladybug",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 2,
+      "id": "polar-beetle-brew",
+      "giver": "polar_bear",
+      "name": "Beetle Brew",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pineapple"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "dandelion"
+        },
+        {
+          "type": "defeat",
+          "mob": "ladybug",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "rhino_beetle",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 3,
+      "id": "polar-candied-beetles",
+      "giver": "polar_bear",
+      "name": "Candied Beetles",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "defeat",
+          "mob": "rhino_beetle",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 4,
+      "id": "polar-exotic-salad",
+      "giver": "polar_bear",
+      "name": "Exotic Salad",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "cactus"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "clover"
+        }
+      ]
+    },
+    {
+      "sequence": 5,
+      "id": "polar-extreme-stir-fry",
+      "giver": "polar_bear",
+      "name": "Extreme Stir-Fry",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "cactus"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "dandelion"
+        },
+        {
+          "type": "defeat",
+          "mob": "spider",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "scorpion",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "werewolf",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 6,
+      "id": "polar-high-protein",
+      "giver": "polar_bear",
+      "name": "High Protein",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "sunflower"
+        },
+        {
+          "type": "defeat",
+          "mob": "mantis",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "scorpion",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "spider",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 7,
+      "id": "polar-ladybug-poppers",
+      "giver": "polar_bear",
+      "name": "Ladybug Poppers",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "blue_flower"
+        },
+        {
+          "type": "defeat",
+          "mob": "ladybug",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 8,
+      "id": "polar-mantis-meatballs",
+      "giver": "polar_bear",
+      "name": "Mantis Meatballs",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pine_tree"
+        },
+        {
+          "type": "defeat",
+          "mob": "mantis",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 9,
+      "id": "polar-prickly-pears",
+      "giver": "polar_bear",
+      "name": "Prickly Pears",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "cactus"
+        }
+      ]
+    },
+    {
+      "sequence": 10,
+      "id": "polar-pumpkin-pie",
+      "giver": "polar_bear",
+      "name": "Pumpkin Pie",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pumpkin"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "sunflower"
+        },
+        {
+          "type": "defeat",
+          "mob": "mantis",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 11,
+      "id": "polar-scorpion-salad",
+      "giver": "polar_bear",
+      "name": "Scorpion Salad",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        },
+        {
+          "type": "defeat",
+          "mob": "scorpion",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 12,
+      "id": "polar-spiced-kebab",
+      "giver": "polar_bear",
+      "name": "Spiced Kebab",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "clover"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "defeat",
+          "mob": "werewolf",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 13,
+      "id": "polar-spider-pot-pie",
+      "giver": "polar_bear",
+      "name": "Spider Pot-Pie",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "defeat",
+          "mob": "spider",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 14,
+      "id": "polar-spooky-stew",
+      "giver": "polar_bear",
+      "name": "Spooky Stew",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "spider"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "defeat",
+          "mob": "spider",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "werewolf",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 15,
+      "id": "polar-strawberry-skewers",
+      "giver": "polar_bear",
+      "name": "Strawberry Skewers",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "defeat",
+          "mob": "scorpion",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 16,
+      "id": "polar-teriyaki-jerky",
+      "giver": "polar_bear",
+      "name": "Teriyaki Jerky",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pineapple"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "spider"
+        },
+        {
+          "type": "defeat",
+          "mob": "werewolf",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 17,
+      "id": "polar-thick-smoothie",
+      "giver": "polar_bear",
+      "name": "Thick Smoothie",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pumpkin"
+        }
+      ]
+    },
+    {
+      "sequence": 18,
+      "id": "polar-trail-mix",
+      "giver": "polar_bear",
+      "name": "Trail Mix",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "sunflower"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pineapple"
+        }
+      ]
+    },
+    {
+      "sequence": 19,
+      "id": "polar-petal-tabbouleh",
+      "giver": "polar_bear",
+      "name": "Petal Tabbouleh",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pineapple"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "defeat",
+          "mob": "rhino_beetle",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 20,
+      "id": "polar-mashed-blooms",
+      "giver": "polar_bear",
+      "name": "Mashed Blooms",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pumpkin"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "spider"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "bamboo"
+        },
+        {
+          "type": "defeat",
+          "mob": "spider",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use nectarpilot_legacy::{AssetKind, generate_asset_catalog};
+use nectarpilot_legacy::{
+    AssetKind, generate_asset_catalog, validate_detector_templates, write_detector_catalog,
+    write_support_catalog,
+};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut arguments = std::env::args_os().skip(1);
@@ -22,9 +25,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &assets_root.join("patterns"),
         AssetKind::Pattern,
     )?;
+    let support_directory = assets_root.join("legacy-support");
+    std::fs::create_dir_all(&support_directory)?;
+    let support = write_support_catalog(
+        &legacy_root,
+        &support_directory.join("_legacy-manifest.yaml"),
+    )?;
+    let detector_directory = assets_root.join("detectors");
+    std::fs::create_dir_all(&detector_directory)?;
+    let detectors = write_detector_catalog(
+        &legacy_root,
+        &detector_directory.join("_legacy-manifest.yaml"),
+    )?;
+    let detector_report = validate_detector_templates(&legacy_root)?;
     println!(
-        "cataloged {} routes ({} safe DSL) and {} patterns ({} safe DSL)",
-        routes.total_files, routes.safe_dsl_files, patterns.total_files, patterns.safe_dsl_files
+        "cataloged {} routes ({} safe DSL), {} patterns ({} safe DSL), and {} pinned support files",
+        routes.total_files,
+        routes.safe_dsl_files,
+        patterns.total_files,
+        patterns.safe_dsl_files,
+        support.entries.len()
     );
+    println!(
+        "detector templates: {} files, {} decoded images, {} inline templates, {} script references, {} missing, {} corrupt",
+        detectors.total_files,
+        detectors.image_files,
+        detectors.inline_templates,
+        detector_report.references,
+        detector_report.missing.len(),
+        detector_report.corrupt.len()
+    );
+    if !detector_report.is_clean() {
+        for problem in detector_report
+            .missing
+            .iter()
+            .chain(detector_report.corrupt.iter())
+        {
+            eprintln!("DETECTOR PROBLEM: {problem}");
+        }
+        return Err("detector template validation failed".into());
+    }
     Ok(())
 }

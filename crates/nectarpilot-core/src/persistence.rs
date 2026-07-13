@@ -5,13 +5,13 @@ use std::{
 };
 
 use chrono::Utc;
-use nectarpilot_contracts::{EventEnvelope, PROFILE_SCHEMA_VERSION, Profile};
+use nectarpilot_contracts::{EventEnvelope, PROFILE_SCHEMA_VERSION, Profile, RunRecord};
 use parking_lot::Mutex;
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, backup::Backup, params};
 use thiserror::Error;
 use uuid::Uuid;
 
-const DATABASE_VERSION: u32 = 3;
+const DATABASE_VERSION: u32 = 4;
 const MAX_CREDENTIAL_REF_LENGTH: usize = 128;
 const MAX_CIPHERTEXT_LENGTH: usize = 64 * 1024;
 
@@ -263,6 +263,83 @@ impl SqliteStore {
         let connection = self.connection.lock();
         backup_connection(&connection, destination.as_ref())
     }
+
+    pub fn record_run(&self, record: &RunRecord) -> Result<(), StoreError> {
+        let connection = self.connection.lock();
+        connection.execute(
+            "INSERT INTO run_history (run_id, profile_id, kind, started_at, finished_at,\
+             final_state, summary, steps_succeeded, steps_failed)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+             ON CONFLICT(run_id) DO UPDATE SET
+               finished_at = excluded.finished_at,
+               final_state = excluded.final_state,
+               summary = excluded.summary,
+               steps_succeeded = excluded.steps_succeeded,
+               steps_failed = excluded.steps_failed",
+            params![
+                record.run_id.to_string(),
+                record.profile_id.to_string(),
+                record.kind,
+                record.started_at.to_rfc3339(),
+                record.finished_at.to_rfc3339(),
+                record.final_state,
+                record.summary,
+                record.steps_succeeded,
+                record.steps_failed,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_run_records(&self, limit: u32) -> Result<Vec<RunRecord>, StoreError> {
+        let connection = self.connection.lock();
+        let mut statement = connection.prepare(
+            "SELECT run_id, profile_id, kind, started_at, finished_at, final_state,\
+             summary, steps_succeeded, steps_failed
+             FROM run_history ORDER BY finished_at DESC LIMIT ?1",
+        )?;
+        let rows = statement.query_map([limit.min(500)], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, String>(6)?,
+                row.get::<_, u32>(7)?,
+                row.get::<_, u32>(8)?,
+            ))
+        })?;
+        let mut records = Vec::new();
+        for row in rows {
+            let (run_id, profile_id, kind, started_at, finished_at, final_state, summary, ok, bad) =
+                row?;
+            let (Ok(run_id), Ok(profile_id)) =
+                (Uuid::parse_str(&run_id), Uuid::parse_str(&profile_id))
+            else {
+                continue;
+            };
+            let (Ok(started_at), Ok(finished_at)) = (
+                chrono::DateTime::parse_from_rfc3339(&started_at),
+                chrono::DateTime::parse_from_rfc3339(&finished_at),
+            ) else {
+                continue;
+            };
+            records.push(RunRecord {
+                run_id,
+                profile_id,
+                kind,
+                started_at: started_at.with_timezone(&Utc),
+                finished_at: finished_at.with_timezone(&Utc),
+                final_state,
+                summary,
+                steps_succeeded: ok,
+                steps_failed: bad,
+            });
+        }
+        Ok(records)
+    }
 }
 
 fn validate_profile(profile: &Profile) -> Result<(), StoreError> {
@@ -360,6 +437,20 @@ fn run_migrations(connection: &mut Connection) -> Result<(), StoreError> {
                     updated_at TEXT NOT NULL\
                  );",
             ),
+            4 => transaction.execute_batch(
+                "CREATE TABLE run_history (\
+                    run_id TEXT PRIMARY KEY NOT NULL,\
+                    profile_id TEXT NOT NULL,\
+                    kind TEXT NOT NULL,\
+                    started_at TEXT NOT NULL,\
+                    finished_at TEXT NOT NULL,\
+                    final_state TEXT NOT NULL,\
+                    summary TEXT NOT NULL,\
+                    steps_succeeded INTEGER NOT NULL,\
+                    steps_failed INTEGER NOT NULL\
+                 );\
+                 CREATE INDEX run_history_finished_idx ON run_history(finished_at);",
+            ),
             _ => unreachable!("bounded by DATABASE_VERSION"),
         };
         if let Err(source) = migration_result {
@@ -433,6 +524,11 @@ fn event_type_name(event: &EventEnvelope) -> &'static str {
         DaemonEvent::ProfileExported { .. } => "profile_exported",
         DaemonEvent::SafeModeEntered { .. } => "safe_mode_entered",
         DaemonEvent::ShutdownReady { .. } => "shutdown_ready",
+        DaemonEvent::SessionProgress(_) => "session_progress",
+        DaemonEvent::LegacyInspection(_) => "legacy_inspection",
+        DaemonEvent::SecretStored { .. } => "secret_stored",
+        DaemonEvent::RunHistory { .. } => "run_history",
+        DaemonEvent::StatsSample(_) => "stats_sample",
     }
 }
 

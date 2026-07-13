@@ -96,6 +96,14 @@ export function GatherPage({
           >
             <Check size={16} /> Apply plan
           </button>
+          <button
+            className="button button-primary"
+            disabled={dirty || pendingAction !== null}
+            title="Runs the saved rotation as a supervised loop of trusted legacy steps (travel, gather, reset/convert). Every asset must be trusted on the Extensions page first."
+            onClick={() => void actions.startLegacySession(10, 120)}
+          >
+            Start legacy session
+          </button>
         </div>
       </section>
 

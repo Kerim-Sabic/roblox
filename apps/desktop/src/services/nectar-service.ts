@@ -33,6 +33,12 @@ export interface NectarService {
     extensionId: string,
     digest: string,
   ): Promise<void>;
+  startLegacySession(
+    profileId: string,
+    maxCycles: number,
+    maxMinutes: number,
+  ): Promise<void>;
+  inspectLegacy(profileId: string, scriptId: string): Promise<void>;
   setCompactMode(compact: boolean): Promise<void>;
 }
 
@@ -127,6 +133,18 @@ export class TauriNectarService implements NectarService {
       extensionId,
       digest,
     });
+  }
+
+  startLegacySession(profileId: string, maxCycles: number, maxMinutes: number) {
+    return invoke<void>("start_legacy_session", {
+      profileId,
+      maxCycles,
+      maxMinutes,
+    });
+  }
+
+  inspectLegacy(profileId: string, scriptId: string) {
+    return invoke<void>("inspect_legacy", { profileId, scriptId });
   }
 
   async setCompactMode(compact: boolean): Promise<void> {
@@ -318,6 +336,28 @@ export class MockNectarService implements NectarService {
       "Legacy compatibility requested",
       `${extension.name} will run only in the contained daemon worker`,
       "warning",
+    );
+    this.publish();
+  }
+
+  async startLegacySession(
+    _profileId: string,
+    maxCycles: number,
+    maxMinutes: number,
+  ): Promise<void> {
+    this.addTimeline(
+      "Legacy session requested",
+      `Field rotation loop for up to ${maxCycles} cycles / ${maxMinutes} minutes`,
+      "warning",
+    );
+    this.publish();
+  }
+
+  async inspectLegacy(_profileId: string, scriptId: string): Promise<void> {
+    this.addTimeline(
+      "Harness preview requested",
+      `The daemon renders the exact generated script for ${scriptId}`,
+      "info",
     );
     this.publish();
   }

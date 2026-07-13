@@ -385,6 +385,20 @@ export function createMockSnapshot(): DashboardSnapshot {
         trust: "review_required",
         permissions: ["Legacy AHK runner", "Keyboard input", "Mouse input"],
         enabled: false,
+        executionMode: "legacy_bridge",
+      },
+      {
+        id: "legacy:pattern:patterns/Stationary.ahk",
+        name: "Pattern · Stationary",
+        author: "Natro Team contributors",
+        version: "1.1.2",
+        description:
+          "Converted into stationary.nectar.yaml. Preview only; native DSL execution is not connected yet.",
+        digest: "sha256:fdf8…cec9",
+        trust: "built_in",
+        permissions: ["Validated movement plan preview"],
+        enabled: false,
+        executionMode: "native_preview",
       },
       {
         id: "unsafe-pack",

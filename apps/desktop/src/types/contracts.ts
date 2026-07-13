@@ -188,6 +188,7 @@ export interface ExtensionManifest {
   trust: "built_in" | "trusted" | "review_required" | "blocked";
   permissions: string[];
   enabled: boolean;
+  executionMode?: "legacy_bridge" | "native_preview";
 }
 
 export interface DiagnosticLog {

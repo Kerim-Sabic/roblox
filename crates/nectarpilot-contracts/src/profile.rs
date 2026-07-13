@@ -57,6 +57,10 @@ pub struct AutomationConfig {
     pub rotations: Vec<FieldRotation>,
     pub features: FeatureFlags,
     pub hotkeys: HotkeyConfig,
+    pub session: SessionConfig,
+    /// Manual planter reminders; the desktop shows countdowns and due badges.
+    /// Nothing is placed or collected automatically from these entries.
+    pub planters: Vec<ManualPlanterTimer>,
 }
 
 impl Default for AutomationConfig {
@@ -67,8 +71,40 @@ impl Default for AutomationConfig {
             rotations: Vec::new(),
             features: FeatureFlags::default(),
             hotkeys: HotkeyConfig::default(),
+            session: SessionConfig::default(),
+            planters: Vec::new(),
         }
     }
+}
+
+/// Bounds for one orchestrated legacy gather session.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(default)]
+pub struct SessionConfig {
+    /// Seconds to remain at the hive converting after each reset step.
+    pub convert_wait_seconds: u16,
+    pub default_max_cycles: u32,
+    pub default_max_minutes: u32,
+}
+
+impl Default for SessionConfig {
+    fn default() -> Self {
+        Self {
+            convert_wait_seconds: 30,
+            default_max_cycles: 10,
+            default_max_minutes: 120,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct ManualPlanterTimer {
+    /// Planter slot 1..=3 as shown in game.
+    pub slot: u8,
+    /// Free-text description, e.g. "Blue Clay in Bamboo".
+    pub label: String,
+    pub placed_at: DateTime<Utc>,
+    pub harvest_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]

@@ -12,6 +12,7 @@ pub mod capture;
 pub mod diagnostics;
 pub mod emergency;
 pub mod freeze;
+pub mod hotkeys;
 pub mod input;
 pub mod job;
 pub mod perception;
@@ -28,12 +29,17 @@ pub use capture::{
     CaptureError, ClientCapture, ClientFrame, NormalizedCrop, PixelRegion, WindowsClientCapture,
     normalized_to_pixels,
 };
+pub use hotkeys::{HotkeyAction, HotkeyChord, parse_hotkey};
 pub use perception::{
-    ConsensusPolicy, ConstrainedOcr, LivePerceptionPipeline, MultiScaleTemplateMatcher, OcrError,
-    OcrRead, OcrRequest, PerceptionError, ScienceBearQuestDetector, Template, TemplateBinding,
-    TemplateDetector, TemplateMatch, TemplateMatcherConfig, TemporalConsensus, WindowsOcr,
+    ConsensusPolicy, ConstrainedOcr, HoneyCounterReader, LivePerceptionPipeline,
+    MultiScaleTemplateMatcher, OcrError, OcrRead, OcrRequest, PerceptionError, QuestBarState,
+    QuestTitleDetector, ScienceBearQuestDetector, Template, TemplateBinding, TemplateDetector,
+    TemplateMatch, TemplateMatcherConfig, TemporalConsensus, WindowsOcr, preprocess_for_ocr,
+    quest_giver_bindings, read_quest_bars, template_from_png_bytes,
 };
 pub use session::{ProcessId, RobloxSession, SessionTarget, WindowHandle};
 
 #[cfg(windows)]
-pub use windows_backend::{DiscoveredRobloxClient, discover_roblox_clients};
+pub use windows_backend::{
+    DiscoveredRobloxClient, WindowsHotkeySet, discover_roblox_clients, tap_global_virtual_key,
+};

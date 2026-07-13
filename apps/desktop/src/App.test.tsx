@@ -111,6 +111,29 @@ describe("NectarPilot desktop", () => {
     ).toBeEnabled();
   });
 
+  it("keeps the converted Stationary pattern out of the legacy runner", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Ready when you are" });
+
+    await user.click(screen.getByRole("button", { name: "Extensions" }));
+    const heading = screen.getByRole("heading", {
+      name: "Pattern · Stationary",
+    });
+    const card = heading.closest("article");
+    expect(card).not.toBeNull();
+    expect(
+      within(card as HTMLElement).getByLabelText(
+        "Native conversion preview; execution unavailable",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(card as HTMLElement).queryByRole("button", {
+        name: "Run contained script",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the versioned Science Bear planner instead of pretending quest OCR is ready", async () => {
     const user = userEvent.setup();
     render(<App />);

@@ -19,11 +19,11 @@ use windows::Win32::System::Threading::{
 };
 use windows::Win32::UI::HiDpi::GetDpiForWindow;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_KEYUP,
-    MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_LEFTDOWN,
-    MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_MOVE,
-    MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_VIRTUALDESK, MOUSEEVENTF_WHEEL,
-    MOUSEINPUT, RegisterHotKey, SendInput, UnregisterHotKey, VIRTUAL_KEY,
+    HOT_KEY_MODIFIERS, INPUT, INPUT_0, INPUT_KEYBOARD, INPUT_MOUSE, KEYBD_EVENT_FLAGS, KEYBDINPUT,
+    KEYEVENTF_KEYUP, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOUSEEVENTF_ABSOLUTE,
+    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP,
+    MOUSEEVENTF_MOVE, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_VIRTUALDESK,
+    MOUSEEVENTF_WHEEL, MOUSEINPUT, RegisterHotKey, SendInput, UnregisterHotKey, VIRTUAL_KEY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GW_OWNER, GetClientRect, GetForegroundWindow, GetSystemMetrics, GetWindow,
@@ -311,6 +311,119 @@ impl InputSink for WindowsInputSink {
                 "SendInput did not accept the event".to_owned(),
             ))
         }
+    }
+}
+
+/// Sends one global key press/release pair for `virtual_key`. Used only to
+/// toggle the generated walk harness's F16 pause handler — an `AutoHotkey`
+/// hotkey fires regardless of which window has focus, so this deliberately
+/// bypasses the focus-guarded input broker.
+pub fn tap_global_virtual_key(virtual_key: u16) -> Result<(), BrokerError> {
+    for released in [false, true] {
+        let input = INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: VIRTUAL_KEY(virtual_key),
+                    dwFlags: if released {
+                        KEYEVENTF_KEYUP
+                    } else {
+                        KEYBD_EVENT_FLAGS::default()
+                    },
+                    ..KEYBDINPUT::default()
+                },
+            },
+        };
+        // SAFETY: INPUT is fully initialized for the keyboard variant and
+        // SendInput receives the exact native structure size.
+        let sent = unsafe {
+            SendInput(
+                &[input],
+                i32::try_from(size_of::<INPUT>()).expect("INPUT fits in i32"),
+            )
+        };
+        if sent != 1 {
+            return Err(BrokerError::Backend(
+                "SendInput did not accept the global key event".to_owned(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Thread-affine registration of several user-configured control chords.
+/// Construct and poll on one dedicated thread; identifiers are the caller's.
+pub struct WindowsHotkeySet {
+    ids: Vec<i32>,
+    _thread_affinity: PhantomData<Rc<()>>,
+}
+
+impl WindowsHotkeySet {
+    /// Registers `(id, modifiers, virtual_key)` chords. Registration failures
+    /// (for example a chord already owned by another app) unwind the set.
+    pub fn register(bindings: &[(i32, u32, u32)]) -> Result<Self, EmergencyStopError> {
+        let mut registered = Vec::with_capacity(bindings.len());
+        for (id, modifiers, virtual_key) in bindings {
+            if !(0..=0xBFFF).contains(id) {
+                unregister_ids(&registered);
+                return Err(EmergencyStopError::Backend(
+                    "global hotkey identifier must be in 0..=0xBFFF".to_owned(),
+                ));
+            }
+            // SAFETY: a null HWND creates thread-associated hotkeys; this
+            // object is !Send and unregisters on the same thread when dropped.
+            let result = unsafe {
+                RegisterHotKey(
+                    None,
+                    *id,
+                    HOT_KEY_MODIFIERS(*modifiers) | MOD_NOREPEAT,
+                    *virtual_key,
+                )
+            };
+            if let Err(error) = result {
+                unregister_ids(&registered);
+                return Err(EmergencyStopError::Backend(format!(
+                    "could not register global hotkey {id}: {error}"
+                )));
+            }
+            registered.push(*id);
+        }
+        Ok(Self {
+            ids: registered,
+            _thread_affinity: PhantomData,
+        })
+    }
+
+    /// Drains pending hotkey messages, returning the pressed identifiers.
+    #[must_use]
+    pub fn poll_pressed(&mut self) -> Vec<i32> {
+        let mut pressed = Vec::new();
+        let mut message = MSG::default();
+        // SAFETY: message is a valid writable structure. Filtering to WM_HOTKEY
+        // consumes only registered hotkey messages for this thread.
+        while unsafe { PeekMessageW(&raw mut message, None, WM_HOTKEY, WM_HOTKEY, PM_REMOVE) }
+            .as_bool()
+        {
+            if let Ok(id) = i32::try_from(message.wParam.0)
+                && self.ids.contains(&id)
+            {
+                pressed.push(id);
+            }
+        }
+        pressed
+    }
+}
+
+impl Drop for WindowsHotkeySet {
+    fn drop(&mut self) {
+        unregister_ids(&self.ids);
+    }
+}
+
+fn unregister_ids(ids: &[i32]) {
+    for id in ids {
+        // SAFETY: unregisters only identifiers this thread registered.
+        let _ = unsafe { UnregisterHotKey(None, *id) };
     }
 }
 

@@ -43,6 +43,8 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - name: Validate all generated legacy harness variants
+        run: cargo run -p nectarpilot-legacy --bin validate_legacy_assets
 
       - name: Build unsigned per-user NSIS installer
         run: pnpm bundle:unsigned

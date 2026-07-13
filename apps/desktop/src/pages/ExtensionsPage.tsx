@@ -180,7 +180,14 @@ export function ExtensionsPage({
                   <button className="button button-secondary button-small">
                     Inspect change
                   </button>
-                ) : extension.id.startsWith("legacy:") ? (
+                ) : extension.executionMode === "native_preview" ? (
+                  <span
+                    className="safe-default-badge"
+                    aria-label="Native conversion preview; execution unavailable"
+                  >
+                    <Box size={14} /> Native conversion preview
+                  </span>
+                ) : extension.executionMode === "legacy_bridge" ? (
                   <button
                     className="button button-secondary button-small"
                     disabled={pendingAction !== null}

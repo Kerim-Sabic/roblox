@@ -1,0 +1,338 @@
+{
+  "schema_version": 1,
+  "knowledge_version": "natro-v1.1.2-import completion-bar semantics (amount 1 = quest bar complete)",
+  "source_url": "https://github.com/NatroTeam/NatroMacro",
+  "quests": [
+    {
+      "sequence": 1,
+      "id": "riley-abilities",
+      "giver": "gifted_riley_bee",
+      "name": "Abilities",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 2,
+      "id": "riley-booster",
+      "giver": "gifted_riley_bee",
+      "name": "Booster",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "token",
+          "token": "red_field_boost",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 3,
+      "id": "riley-clean-up",
+      "giver": "gifted_riley_bee",
+      "name": "Clean-Up",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        }
+      ]
+    },
+    {
+      "sequence": 4,
+      "id": "riley-extraction",
+      "giver": "gifted_riley_bee",
+      "name": "Extraction",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "clover"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "cactus"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "pumpkin"
+        }
+      ]
+    },
+    {
+      "sequence": 5,
+      "id": "riley-goo",
+      "giver": "gifted_riley_bee",
+      "name": "Goo",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "sequence": 6,
+      "id": "riley-medley",
+      "giver": "gifted_riley_bee",
+      "name": "Medley",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        }
+      ]
+    },
+    {
+      "sequence": 7,
+      "id": "riley-mushrooms",
+      "giver": "gifted_riley_bee",
+      "name": "Mushrooms",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        }
+      ]
+    },
+    {
+      "sequence": 8,
+      "id": "riley-picnic",
+      "giver": "gifted_riley_bee",
+      "name": "Picnic",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "feed_item",
+          "item": "strawberry",
+          "count": 1
+        },
+        {
+          "type": "token",
+          "token": "ant_pass",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 9,
+      "id": "riley-pollen",
+      "giver": "gifted_riley_bee",
+      "name": "Pollen",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "sequence": 10,
+      "id": "riley-rampage",
+      "giver": "gifted_riley_bee",
+      "name": "Rampage",
+      "objectives": [
+        {
+          "type": "defeat",
+          "mob": "any",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "ladybug",
+          "count": 1
+        },
+        {
+          "type": "token",
+          "token": "ant_pass",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "sequence": 11,
+      "id": "riley-roses",
+      "giver": "gifted_riley_bee",
+      "name": "Roses",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        }
+      ]
+    },
+    {
+      "sequence": 12,
+      "id": "riley-scavenge",
+      "giver": "gifted_riley_bee",
+      "name": "Scavenge",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        },
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        }
+      ]
+    },
+    {
+      "sequence": 13,
+      "id": "riley-skirmish",
+      "giver": "gifted_riley_bee",
+      "name": "Skirmish",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "defeat",
+          "mob": "ladybug",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 14,
+      "id": "riley-strawberries",
+      "giver": "gifted_riley_bee",
+      "name": "Strawberries",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        }
+      ]
+    },
+    {
+      "sequence": 15,
+      "id": "riley-tango",
+      "giver": "gifted_riley_bee",
+      "name": "Tango",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "color": "red"
+        },
+        {
+          "type": "pollen",
+          "amount": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "scorpion",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 16,
+      "id": "riley-tour",
+      "giver": "gifted_riley_bee",
+      "name": "Tour",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "mushroom"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "rose"
+        },
+        {
+          "type": "defeat",
+          "mob": "ladybug",
+          "count": 1
+        },
+        {
+          "type": "defeat",
+          "mob": "scorpion",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "sequence": 17,
+      "id": "riley-petals",
+      "giver": "gifted_riley_bee",
+      "name": "Petals",
+      "objectives": [
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "strawberry"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "clover"
+        },
+        {
+          "type": "pollen",
+          "amount": 1,
+          "field": "spider"
+        }
+      ]
+    }
+  ]
+}

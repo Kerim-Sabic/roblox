@@ -18,6 +18,8 @@ export interface NectarActions {
   completeOnboarding(): Promise<void>;
   trustExtension(extensionId: string, digest: string): Promise<void>;
   runLegacyExtension(extensionId: string, digest: string): Promise<void>;
+  startLegacySession(maxCycles: number, maxMinutes: number): Promise<void>;
+  inspectLegacy(scriptId: string): Promise<void>;
   setCompactMode(compact: boolean): Promise<void>;
 }
 
@@ -134,6 +136,14 @@ export function useNectarPilot(
       runLegacyExtension: (extensionId, digest) =>
         run("run-legacy-extension", (profileId) =>
           service.runLegacyExtension(profileId, extensionId, digest),
+        ),
+      startLegacySession: (maxCycles, maxMinutes) =>
+        run("start-legacy-session", (profileId) =>
+          service.startLegacySession(profileId, maxCycles, maxMinutes),
+        ),
+      inspectLegacy: (scriptId) =>
+        run("inspect-legacy", (profileId) =>
+          service.inspectLegacy(profileId, scriptId),
         ),
       setCompactMode: async (compact) => {
         setPendingAction("compact-mode");

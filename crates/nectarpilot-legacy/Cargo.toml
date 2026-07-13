@@ -8,7 +8,9 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+base64.workspace = true
 hex.workspace = true
+image.workspace = true
 nectarpilot-platform = { path = "../nectarpilot-platform", version = "=0.1.0" }
 regex.workspace = true
 serde.workspace = true

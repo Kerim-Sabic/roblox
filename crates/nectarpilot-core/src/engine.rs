@@ -1,4 +1,6 @@
 use std::{
+    collections::HashSet,
+    future::Future,
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
@@ -10,8 +12,9 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use futures::FutureExt;
 use nectarpilot_contracts::{
-    ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, EventEnvelope, Profile,
-    RunSnapshot, RunState, StartMode,
+    ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, EventEnvelope,
+    LegacyInspection, Profile, RunRecord, RunSnapshot, RunState, SessionProgress, StartMode,
+    StatsSample,
 };
 use parking_lot::{Mutex, RwLock};
 use serde_json::json;
@@ -19,6 +22,7 @@ use thiserror::Error;
 use tokio::{
     sync::{broadcast, watch},
     task::JoinHandle,
+    time::Instant,
 };
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
@@ -28,12 +32,62 @@ use crate::{
     persistence::{SqliteStore, StoreError},
     reconnect::{ReconnectOutcome, ReconnectPolicy, run_bounded_reconnect},
     scheduler::{ScheduleError, TaskKey, TaskPermit, TaskScheduler},
+    session::{SessionStep, SessionStepKind, build_session_plan, validate_session_limits},
 };
 
 #[derive(Debug, Clone)]
 pub struct TaskContext {
     cancellation: CancellationToken,
     paused: watch::Receiver<bool>,
+}
+
+enum TimedLegacyCall<T> {
+    Completed(T),
+    UserCancelled,
+    FieldDeadline,
+    SessionDeadline,
+}
+
+/// Runs one compatibility operation under both the session wall-clock and an
+/// optional field-gather deadline. Each call receives a child token so a field
+/// cutoff can stop the exact AHK job without cancelling the whole session.
+async fn bounded_legacy_call<T, F, Fut>(
+    context: &TaskContext,
+    field_deadline: Option<Instant>,
+    session_deadline: Instant,
+    operation: F,
+) -> TimedLegacyCall<T>
+where
+    F: FnOnce(TaskContext) -> Fut,
+    Fut: Future<Output = T>,
+{
+    let child_cancellation = context.cancellation.child_token();
+    let child_context = TaskContext {
+        cancellation: child_cancellation.clone(),
+        paused: context.paused.clone(),
+    };
+    let mut operation = Box::pin(operation(child_context));
+    let field_wait = async {
+        match field_deadline {
+            Some(deadline) => tokio::time::sleep_until(deadline).await,
+            None => std::future::pending::<()>().await,
+        }
+    };
+    tokio::pin!(field_wait);
+
+    let outcome = tokio::select! {
+        biased;
+        () = context.cancellation.cancelled() => TimedLegacyCall::UserCancelled,
+        () = tokio::time::sleep_until(session_deadline) => TimedLegacyCall::SessionDeadline,
+        () = &mut field_wait => TimedLegacyCall::FieldDeadline,
+        result = operation.as_mut() => return TimedLegacyCall::Completed(result),
+    };
+    child_cancellation.cancel();
+    // The production runner reacts within its short poll interval, removes the
+    // staged harness, and drops its kill-on-close job. A broken port still gets
+    // only a bounded cleanup grace before its future is dropped.
+    let _ = tokio::time::timeout(Duration::from_secs(1), operation.as_mut()).await;
+    outcome
 }
 
 impl TaskContext {
@@ -123,6 +177,53 @@ pub trait LegacyExecutionPort: Send + Sync + 'static {
     /// Must be idempotent and terminate only the exact compatibility child or
     /// job owned by this port.
     async fn cancel(&self) -> Result<(), AutomationError>;
+
+    /// Suspends the running walk script (the generated harness installs
+    /// Natro's F16 pause handler, which releases held keys). Ports without
+    /// that capability keep the historical stop-only behavior.
+    async fn pause(&self) -> Result<(), AutomationError> {
+        Err(AutomationError::InvalidCommand(
+            "this legacy port cannot pause; stop it instead".into(),
+        ))
+    }
+
+    async fn resume(&self) -> Result<(), AutomationError> {
+        Err(AutomationError::InvalidCommand(
+            "this legacy port cannot resume; start a new run instead".into(),
+        ))
+    }
+
+    /// Builds the human-review payload (manifest identity plus the exact
+    /// generated harness) without executing anything.
+    async fn describe(
+        &self,
+        profile: &Profile,
+        script_id: &str,
+    ) -> Result<LegacyInspection, AutomationError> {
+        let _ = (profile, script_id);
+        Err(AutomationError::LegacyUnavailable)
+    }
+
+    /// Attempts disconnect recovery between session steps. `None` means
+    /// recovery is not applicable (no disconnect visible, no rejoin target,
+    /// or unsupported port); a result reports what the attempt did.
+    async fn recover(
+        &self,
+        profile: &Profile,
+        private_server_link: Option<&str>,
+        context: TaskContext,
+    ) -> Option<ActionResult> {
+        let _ = (profile, private_server_link, context);
+        None
+    }
+}
+
+/// Daemon-owned sealing for stored secrets. The core store persists only
+/// ciphertext, so a platform implementation (for example Windows DPAPI) must
+/// be installed before secrets can be imported or used.
+pub trait SecretPort: Send + Sync + 'static {
+    fn seal(&self, plaintext: &[u8]) -> Result<Vec<u8>, AutomationError>;
+    fn open(&self, ciphertext: &[u8]) -> Result<Vec<u8>, AutomationError>;
 }
 
 pub struct AutomationEngine<B: AutomationBackend> {
@@ -151,6 +252,8 @@ struct EngineInner<B: AutomationBackend> {
     worker: tokio::sync::Mutex<Option<JoinHandle<()>>>,
     scheduler: TaskScheduler,
     legacy_port: RwLock<Option<Arc<dyn LegacyExecutionPort>>>,
+    secret_port: RwLock<Option<Arc<dyn SecretPort>>>,
+    report_directory: RwLock<Option<std::path::PathBuf>>,
     reconnect_policy: RwLock<ReconnectPolicy>,
     crash_guard: Mutex<CrashLoopGuard>,
     safe_mode: AtomicBool,
@@ -187,6 +290,8 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 worker: tokio::sync::Mutex::new(None),
                 scheduler: TaskScheduler::default(),
                 legacy_port: RwLock::new(None),
+                secret_port: RwLock::new(None),
+                report_directory: RwLock::new(None),
                 reconnect_policy: RwLock::new(ReconnectPolicy::default()),
                 crash_guard: Mutex::new(crash_guard),
                 safe_mode: AtomicBool::new(safe_mode),
@@ -226,6 +331,20 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         *self.inner.legacy_port.write() = Some(port);
     }
 
+    pub fn install_secret_port(&self, port: Arc<dyn SecretPort>) {
+        *self.inner.secret_port.write() = Some(port);
+    }
+
+    /// Directory that receives redacted end-of-run JSON reports.
+    pub fn set_report_directory(&self, directory: std::path::PathBuf) {
+        *self.inner.report_directory.write() = Some(directory);
+    }
+
+    /// Publishes a passive screen-derived statistics sample to subscribers.
+    pub fn publish_stats(&self, sample: StatsSample) {
+        self.emit(DaemonEvent::StatsSample(sample));
+    }
+
     pub async fn handle_command(&self, envelope: CommandEnvelope) -> Result<(), AutomationError> {
         if let Err(error) = envelope.validate_version() {
             let reason = error.to_string();
@@ -257,8 +376,8 @@ impl<B: AutomationBackend> AutomationEngine<B> {
     async fn dispatch(&self, envelope: CommandEnvelope) -> Result<(), AutomationError> {
         match envelope.command {
             Command::Start { mode } => self.start(envelope.profile_id, mode).await,
-            Command::Pause => self.pause(),
-            Command::Resume => self.resume(),
+            Command::Pause => self.pause().await,
+            Command::Resume => self.resume().await,
             Command::Stop => self.stop(false).await,
             Command::EmergencyStop | Command::ShutdownDaemon => self.stop(true).await,
             Command::GetSnapshot => {
@@ -279,6 +398,23 @@ impl<B: AutomationBackend> AutomationEngine<B> {
             } => {
                 self.start_legacy(envelope.profile_id, script_id, approved_sha256)
                     .await
+            }
+            Command::StartLegacySession {
+                max_cycles,
+                max_minutes,
+            } => {
+                self.start_legacy_session(envelope.profile_id, max_cycles, max_minutes)
+                    .await
+            }
+            Command::InspectLegacy { script_id } => {
+                self.inspect_legacy(envelope.profile_id, &script_id).await
+            }
+            Command::ImportSecret { name, value } => self.import_secret(&name, &value),
+            Command::GetRunHistory => {
+                self.emit(DaemonEvent::RunHistory {
+                    entries: self.inner.store.list_run_records(50)?,
+                });
+                Ok(())
             }
             Command::SaveProfile { profile } => {
                 if envelope.profile_id != profile.id {
@@ -470,23 +606,443 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         Ok(())
     }
 
-    fn pause(&self) -> Result<(), AutomationError> {
-        if self
+    async fn start_legacy_session(
+        &self,
+        profile_id: Uuid,
+        max_cycles: u32,
+        max_minutes: u32,
+    ) -> Result<(), AutomationError> {
+        validate_session_limits(max_cycles, max_minutes)
+            .map_err(|error| AutomationError::InvalidCommand(error.to_string()))?;
+        if self.inner.safe_mode.load(Ordering::SeqCst) {
+            return Err(AutomationError::SafeMode);
+        }
+        if self.state() != RunState::Idle {
+            return Err(AutomationError::InvalidState {
+                current: self.state(),
+                command: "start_legacy_session",
+            });
+        }
+        let port = self
             .inner
-            .active_task
+            .legacy_port
             .read()
-            .as_deref()
-            .is_some_and(|task| task.starts_with("legacy:"))
+            .clone()
+            .ok_or(AutomationError::LegacyUnavailable)?;
+        let profile = self
+            .inner
+            .store
+            .load_profile(profile_id)?
+            .ok_or(StoreError::ProfileNotFound(profile_id))?;
+        let plan = build_session_plan(&profile)
+            .map_err(|error| AutomationError::InvalidCommand(error.to_string()))?;
+        self.inner
+            .store
+            .set_runtime_value("selected_profile_id", &profile_id.to_string())?;
+        let permit = self.inner.scheduler.acquire(TaskKey {
+            profile_id,
+            task_name: "legacy_compatibility_run".into(),
+        })?;
+
+        let mut worker = self.inner.worker.lock().await;
+        if worker.as_ref().is_some_and(|handle| !handle.is_finished()) {
+            return Err(AutomationError::WorkerAlreadyRunning);
+        }
+        worker.take();
+
+        let cancellation = CancellationToken::new();
+        let (pause_sender, pause_receiver) = watch::channel(false);
+        *self.inner.cancellation.lock() = Some(cancellation.clone());
+        *self.inner.pause_sender.lock() = Some(pause_sender);
+        *self.inner.profile_id.write() = Some(profile_id);
+        *self.inner.run_id.write() = Uuid::now_v7();
+        *self.inner.active_task.write() = Some("legacy-session:preflight".into());
+        self.transition(RunState::Preflight, "legacy session start requested");
+
+        let engine = self.clone();
+        let context = TaskContext {
+            cancellation,
+            paused: pause_receiver,
+        };
+        *worker = Some(tokio::spawn(async move {
+            engine
+                .run_legacy_session_worker(
+                    profile,
+                    plan,
+                    max_cycles,
+                    max_minutes,
+                    port,
+                    context,
+                    permit,
+                )
+                .await;
+        }));
+        Ok(())
+    }
+
+    #[allow(
+        clippy::too_many_lines,
+        clippy::too_many_arguments,
+        reason = "the session lifecycle is one supervised linear loop; splitting it would hide the cleanup ordering"
+    )]
+    async fn run_legacy_session_worker(
+        &self,
+        profile: Profile,
+        plan: Vec<SessionStep>,
+        max_cycles: u32,
+        max_minutes: u32,
+        port: Arc<dyn LegacyExecutionPort>,
+        mut context: TaskContext,
+        _permit: TaskPermit,
+    ) {
+        let started_at = Utc::now();
+        let session_deadline = Instant::now() + Duration::from_secs(u64::from(max_minutes) * 60);
+        let mut succeeded = 0_u32;
+        let mut failed = 0_u32;
+        let mut final_state = RunState::Idle;
+        let mut reason = String::from("session completed");
+
+        // Preflight every unique step, including the generated reset harness,
+        // before any movement begins.
+        let mut preflighted = HashSet::new();
+        for step in &plan {
+            if !preflighted.insert(step.script_id.as_str()) {
+                continue;
+            }
+            let preflight = tokio::select! {
+                () = context.cancellation.cancelled() => Err(AutomationError::Cancelled),
+                result = port.preflight(&profile, &step.script_id, &step.approved_sha256) => result,
+            };
+            if let Err(error) = preflight {
+                let cancelled = matches!(error, AutomationError::Cancelled);
+                self.emit(DaemonEvent::ActionCompleted(action_result(
+                    &format!("session_preflight:{}", step.script_id),
+                    if cancelled {
+                        ActionOutcome::Cancelled
+                    } else {
+                        ActionOutcome::Failed
+                    },
+                    started_at,
+                    error.to_string(),
+                )));
+                let _ = port.cancel().await;
+                let _ = self.inner.backend.release_all_inputs().await;
+                self.record_run_outcome(
+                    &profile,
+                    "legacy_session",
+                    started_at,
+                    if cancelled {
+                        RunState::Idle
+                    } else {
+                        RunState::Faulted
+                    },
+                    &format!("session preflight failed: {error}"),
+                    0,
+                    u32::from(!cancelled),
+                );
+                self.finish_worker(
+                    if cancelled {
+                        RunState::Idle
+                    } else {
+                        RunState::Faulted
+                    },
+                    "legacy session preflight ended",
+                );
+                return;
+            }
+        }
+
+        *self.inner.active_task.write() = Some("legacy-session".into());
+        self.transition(RunState::Running, "legacy session preflight passed");
+        let step_count = u32::try_from(plan.len()).unwrap_or(u32::MAX);
+
+        'session: for cycle in 1..=max_cycles {
+            for (index, step) in plan.iter().enumerate() {
+                if context.checkpoint().await.is_err() {
+                    reason = "session cancelled".into();
+                    break 'session;
+                }
+                if Instant::now() >= session_deadline {
+                    reason = format!("session reached its {max_minutes}-minute limit");
+                    break 'session;
+                }
+                self.emit(DaemonEvent::SessionProgress(SessionProgress {
+                    cycle,
+                    max_cycles,
+                    step_index: u32::try_from(index).unwrap_or(u32::MAX) + 1,
+                    step_count,
+                    description: step.description.clone(),
+                }));
+                let field_deadline = step
+                    .gather_seconds
+                    .map(|seconds| Instant::now() + Duration::from_secs(u64::from(seconds)));
+                let mut completed = 0_u16;
+                let mut recovered_once = false;
+                'step: loop {
+                    if context.checkpoint().await.is_err() {
+                        reason = "session cancelled".into();
+                        break 'session;
+                    }
+                    if Instant::now() >= session_deadline {
+                        reason = format!("session reached its {max_minutes}-minute limit");
+                        break 'session;
+                    }
+                    if field_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+                        break 'step;
+                    }
+                    if field_deadline.is_none() && completed >= step.repetitions {
+                        break 'step;
+                    }
+                    let execution = bounded_legacy_call(
+                        &context,
+                        field_deadline,
+                        session_deadline,
+                        |execution_context| {
+                            port.execute(
+                                &profile,
+                                &step.script_id,
+                                &step.approved_sha256,
+                                execution_context,
+                            )
+                        },
+                    )
+                    .await;
+                    let result = match execution {
+                        TimedLegacyCall::Completed(result) => result,
+                        TimedLegacyCall::UserCancelled => {
+                            reason = "session cancelled".into();
+                            break 'session;
+                        }
+                        TimedLegacyCall::SessionDeadline => {
+                            reason = format!("session reached its {max_minutes}-minute limit");
+                            break 'session;
+                        }
+                        TimedLegacyCall::FieldDeadline => break 'step,
+                    };
+                    self.emit(DaemonEvent::ActionCompleted(result.clone()));
+                    match result.outcome {
+                        ActionOutcome::Succeeded | ActionOutcome::Skipped => {
+                            succeeded += 1;
+                            completed = completed.saturating_add(1);
+                            recovered_once = false;
+                            if field_deadline.is_some() {
+                                // A malformed script that exits immediately must
+                                // not turn a timed gather into a hot loop.
+                                tokio::task::yield_now().await;
+                            }
+                        }
+                        ActionOutcome::Cancelled => {
+                            reason = "session cancelled".into();
+                            break 'session;
+                        }
+                        ActionOutcome::Failed | ActionOutcome::NeedsAttention => {
+                            failed += 1;
+                            if profile.automation.reconnect_enabled && !recovered_once {
+                                self.transition(
+                                    RunState::Recovering,
+                                    "session step failed; attempting recovery",
+                                );
+                                let link = self.private_server_link();
+                                let recovery = bounded_legacy_call(
+                                    &context,
+                                    field_deadline,
+                                    session_deadline,
+                                    |recovery_context| {
+                                        port.recover(&profile, link.as_deref(), recovery_context)
+                                    },
+                                )
+                                .await;
+                                match recovery {
+                                    TimedLegacyCall::Completed(Some(recovery)) => {
+                                        let recovered =
+                                            recovery.outcome == ActionOutcome::Succeeded;
+                                        self.emit(DaemonEvent::ActionCompleted(recovery));
+                                        if recovered {
+                                            if step.kind == SessionStepKind::Gather {
+                                                final_state = RunState::NeedsAttention;
+                                                reason = "recovery returned to the hive after a gather failure; restart the session so travel is verified again".into();
+                                                break 'session;
+                                            }
+                                            recovered_once = true;
+                                            self.transition(
+                                                RunState::Running,
+                                                "session recovered; retrying current step",
+                                            );
+                                            continue 'step;
+                                        }
+                                    }
+                                    TimedLegacyCall::Completed(None) => {}
+                                    TimedLegacyCall::UserCancelled => {
+                                        reason = "session cancelled".into();
+                                        break 'session;
+                                    }
+                                    TimedLegacyCall::SessionDeadline => {
+                                        reason = format!(
+                                            "session reached its {max_minutes}-minute limit"
+                                        );
+                                        break 'session;
+                                    }
+                                    TimedLegacyCall::FieldDeadline => {
+                                        final_state = RunState::NeedsAttention;
+                                        reason = format!(
+                                            "session step failed and recovery exceeded the field duration: {}",
+                                            result.message
+                                        );
+                                        break 'session;
+                                    }
+                                }
+                            }
+                            final_state = RunState::NeedsAttention;
+                            reason = format!("session step failed: {}", result.message);
+                            break 'session;
+                        }
+                    }
+                }
+            }
+        }
+
+        let _ = port.cancel().await;
+        if let Err(error) = self.inner.backend.release_all_inputs().await {
+            final_state = RunState::Faulted;
+            reason = format!("failed to release inputs: {error}");
+        }
+        self.record_run_outcome(
+            &profile,
+            "legacy_session",
+            started_at,
+            final_state,
+            &reason,
+            succeeded,
+            failed,
+        );
+        self.finish_worker(final_state, &reason);
+    }
+
+    /// Decrypts the stored private-server link for recovery, if present.
+    /// The plaintext stays in-process and is never emitted or logged.
+    fn private_server_link(&self) -> Option<String> {
+        let port = self.inner.secret_port.read().clone()?;
+        let ciphertext = self
+            .inner
+            .store
+            .load_encrypted_secret("private_server_link")
+            .ok()
+            .flatten()?;
+        let plaintext = port.open(&ciphertext).ok()?;
+        String::from_utf8(plaintext).ok()
+    }
+
+    async fn inspect_legacy(
+        &self,
+        profile_id: Uuid,
+        script_id: &str,
+    ) -> Result<(), AutomationError> {
+        if script_id.is_empty() || script_id.len() > 128 || script_id.chars().any(char::is_control)
         {
             return Err(AutomationError::InvalidCommand(
-                "legacy compatibility scripts cannot pause safely; stop them instead".into(),
+                "legacy script identifier is invalid".into(),
             ));
         }
+        let port = self
+            .inner
+            .legacy_port
+            .read()
+            .clone()
+            .ok_or(AutomationError::LegacyUnavailable)?;
+        let profile = self
+            .inner
+            .store
+            .load_profile(profile_id)?
+            .ok_or(StoreError::ProfileNotFound(profile_id))?;
+        let inspection = port.describe(&profile, script_id).await?;
+        self.emit(DaemonEvent::LegacyInspection(inspection));
+        Ok(())
+    }
+
+    fn import_secret(&self, name: &str, value: &str) -> Result<(), AutomationError> {
+        if value.is_empty() || value.len() > 4096 {
+            return Err(AutomationError::InvalidCommand(
+                "secret value must contain between 1 and 4096 bytes".into(),
+            ));
+        }
+        let port = self.inner.secret_port.read().clone().ok_or_else(|| {
+            AutomationError::InvalidCommand(
+                "no secret protector is installed in this daemon".into(),
+            )
+        })?;
+        let ciphertext = port.seal(value.as_bytes())?;
+        // Name bounds are enforced again by the store's credential validator.
+        self.inner.store.store_encrypted_secret(name, &ciphertext)?;
+        self.emit(DaemonEvent::SecretStored {
+            name: name.to_owned(),
+        });
+        Ok(())
+    }
+
+    #[allow(clippy::too_many_arguments, reason = "one flat summary row")]
+    fn record_run_outcome(
+        &self,
+        profile: &Profile,
+        kind: &str,
+        started_at: DateTime<Utc>,
+        final_state: RunState,
+        summary: &str,
+        steps_succeeded: u32,
+        steps_failed: u32,
+    ) {
+        let record = RunRecord {
+            run_id: *self.inner.run_id.read(),
+            profile_id: profile.id,
+            kind: kind.to_owned(),
+            started_at,
+            finished_at: Utc::now(),
+            final_state: format!("{final_state:?}"),
+            summary: summary.to_owned(),
+            steps_succeeded,
+            steps_failed,
+        };
+        if let Err(error) = self.inner.store.record_run(&record) {
+            tracing::error!(%error, "failed to persist run history record");
+        }
+        let directory = self.inner.report_directory.read().clone();
+        if let Some(directory) = directory {
+            let path = directory.join(format!("run-{}.json", record.run_id));
+            let written = std::fs::create_dir_all(&directory).and_then(|()| {
+                std::fs::write(
+                    &path,
+                    serde_json::to_vec_pretty(&record).unwrap_or_default(),
+                )
+            });
+            if let Err(error) = written {
+                tracing::warn!(%error, path = %path.display(), "failed to write run report");
+            }
+        }
+    }
+
+    async fn pause(&self) -> Result<(), AutomationError> {
         if self.state() != RunState::Running {
             return Err(AutomationError::InvalidState {
                 current: self.state(),
                 command: "pause",
             });
+        }
+        let legacy_active = self
+            .inner
+            .active_task
+            .read()
+            .as_deref()
+            .is_some_and(|task| task.starts_with("legacy"));
+        if legacy_active {
+            // The generated harness installs Natro's F16 pause handler, which
+            // releases held keys; the port toggles it. A port without that
+            // capability fails here and the run keeps its stop-only behavior.
+            let port = self
+                .inner
+                .legacy_port
+                .read()
+                .clone()
+                .ok_or(AutomationError::LegacyUnavailable)?;
+            port.pause().await?;
         }
         let sender = self
             .inner
@@ -501,12 +1057,27 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         Ok(())
     }
 
-    fn resume(&self) -> Result<(), AutomationError> {
+    async fn resume(&self) -> Result<(), AutomationError> {
         if self.state() != RunState::Paused {
             return Err(AutomationError::InvalidState {
                 current: self.state(),
                 command: "resume",
             });
+        }
+        let legacy_active = self
+            .inner
+            .active_task
+            .read()
+            .as_deref()
+            .is_some_and(|task| task.starts_with("legacy"));
+        if legacy_active {
+            let port = self
+                .inner
+                .legacy_port
+                .read()
+                .clone()
+                .ok_or(AutomationError::LegacyUnavailable)?;
+            port.resume().await?;
         }
         let sender = self
             .inner
@@ -755,6 +1326,18 @@ impl<B: AutomationBackend> AutomationEngine<B> {
             final_state = RunState::Faulted;
             reason = format!("failed to release inputs: {error}");
         }
+        self.record_run_outcome(
+            &profile,
+            "legacy",
+            started_at,
+            final_state,
+            &reason,
+            u32::from(result.outcome == ActionOutcome::Succeeded),
+            u32::from(matches!(
+                result.outcome,
+                ActionOutcome::Failed | ActionOutcome::NeedsAttention
+            )),
+        );
         self.finish_worker(final_state, &reason);
     }
 
@@ -1032,7 +1615,7 @@ mod tests {
     use std::{
         sync::{
             Arc,
-            atomic::{AtomicUsize, Ordering},
+            atomic::{AtomicBool, AtomicUsize, Ordering},
         },
         time::Duration,
     };
@@ -1040,9 +1623,10 @@ mod tests {
     use async_trait::async_trait;
     use chrono::Utc;
     use nectarpilot_contracts::{
-        ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, Profile, RunState,
-        StartMode,
+        ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, FieldRotation, Profile,
+        RunState, StartMode,
     };
+    use parking_lot::Mutex as TestMutex;
     use tempfile::tempdir;
 
     use crate::{persistence::SqliteStore, reconnect::ReconnectPolicy};
@@ -1059,6 +1643,32 @@ mod tests {
     struct MockLegacyPort {
         starts: AtomicUsize,
         cancels: AtomicUsize,
+    }
+
+    struct SessionLegacyPort {
+        calls: TestMutex<Vec<String>>,
+        fail_route_once: AtomicBool,
+        fail_pattern_once: AtomicBool,
+        recoveries: AtomicUsize,
+        cancelled_patterns: AtomicUsize,
+        pattern_delay: Duration,
+    }
+
+    impl SessionLegacyPort {
+        fn new(fail_route_once: bool, fail_pattern_once: bool, pattern_delay: Duration) -> Self {
+            Self {
+                calls: TestMutex::new(Vec::new()),
+                fail_route_once: AtomicBool::new(fail_route_once),
+                fail_pattern_once: AtomicBool::new(fail_pattern_once),
+                recoveries: AtomicUsize::new(0),
+                cancelled_patterns: AtomicUsize::new(0),
+                pattern_delay,
+            }
+        }
+
+        fn calls(&self) -> Vec<String> {
+            self.calls.lock().clone()
+        }
     }
 
     #[async_trait]
@@ -1101,6 +1711,90 @@ mod tests {
         async fn cancel(&self) -> Result<(), AutomationError> {
             self.cancels.fetch_add(1, Ordering::SeqCst);
             Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl LegacyExecutionPort for SessionLegacyPort {
+        async fn preflight(
+            &self,
+            _profile: &Profile,
+            _script_id: &str,
+            _approved_sha256: &str,
+        ) -> Result<(), AutomationError> {
+            Ok(())
+        }
+
+        async fn execute(
+            &self,
+            _profile: &Profile,
+            script_id: &str,
+            _approved_sha256: &str,
+            context: TaskContext,
+        ) -> ActionResult {
+            self.calls.lock().push(script_id.to_owned());
+            let started_at = Utc::now();
+            if script_id.contains("gtf-") && self.fail_route_once.swap(false, Ordering::SeqCst) {
+                return super::action_result(
+                    &format!("legacy:{script_id}"),
+                    ActionOutcome::Failed,
+                    started_at,
+                    "fixture route failed",
+                );
+            }
+            if script_id.contains("legacy:pattern:") {
+                if self.fail_pattern_once.swap(false, Ordering::SeqCst) {
+                    return super::action_result(
+                        &format!("legacy:{script_id}"),
+                        ActionOutcome::Failed,
+                        started_at,
+                        "fixture pattern failure",
+                    );
+                }
+                let cancellation = context.cancellation_token();
+                return tokio::select! {
+                    () = cancellation.cancelled() => {
+                        self.cancelled_patterns.fetch_add(1, Ordering::SeqCst);
+                        super::action_result(
+                            &format!("legacy:{script_id}"),
+                            ActionOutcome::Cancelled,
+                            started_at,
+                            "fixture pattern cutoff",
+                        )
+                    }
+                    () = tokio::time::sleep(self.pattern_delay) => super::action_result(
+                        &format!("legacy:{script_id}"),
+                        ActionOutcome::Succeeded,
+                        started_at,
+                        "fixture pattern completed",
+                    ),
+                };
+            }
+            super::action_result(
+                &format!("legacy:{script_id}"),
+                ActionOutcome::Succeeded,
+                started_at,
+                "fixture step completed",
+            )
+        }
+
+        async fn cancel(&self) -> Result<(), AutomationError> {
+            Ok(())
+        }
+
+        async fn recover(
+            &self,
+            _profile: &Profile,
+            _private_server_link: Option<&str>,
+            _context: TaskContext,
+        ) -> Option<ActionResult> {
+            self.recoveries.fetch_add(1, Ordering::SeqCst);
+            Some(super::action_result(
+                "legacy:recover",
+                ActionOutcome::Succeeded,
+                Utc::now(),
+                "fixture recovery completed",
+            ))
         }
     }
 
@@ -1161,6 +1855,143 @@ mod tests {
         })
         .await
         .expect("state transition timed out");
+    }
+
+    fn session_profile(gather_seconds: u32, reconnect_enabled: bool) -> Profile {
+        let mut profile = Profile::new("legacy session fixture");
+        profile.automation.reconnect_enabled = reconnect_enabled;
+        profile.automation.rotations = vec![FieldRotation {
+            field: "Sunflower".into(),
+            pattern: "Snake".into(),
+            gather_seconds,
+            repetitions: 1,
+        }];
+        profile.trusted_extensions.insert(
+            "legacy:route:paths/gtf-sunflower.ahk".into(),
+            "a".repeat(64),
+        );
+        profile
+            .trusted_extensions
+            .insert("legacy:pattern:patterns/Snake.ahk".into(), "b".repeat(64));
+        profile
+    }
+
+    #[tokio::test]
+    async fn successful_recovery_retries_the_same_session_step() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let profile = session_profile(1, true);
+        store.save_profile(&profile).expect("profile");
+        let engine =
+            AutomationEngine::new(Arc::new(MockBackend::default()), store).expect("engine");
+        let legacy = Arc::new(SessionLegacyPort::new(true, false, Duration::from_secs(2)));
+        engine.install_legacy_port(Arc::clone(&legacy) as Arc<dyn LegacyExecutionPort>);
+
+        engine
+            .handle_command(CommandEnvelope::new(
+                profile.id,
+                Command::StartLegacySession {
+                    max_cycles: 1,
+                    max_minutes: 5,
+                },
+            ))
+            .await
+            .expect("start session");
+        wait_for_state(&engine, RunState::Running).await;
+        wait_for_state(&engine, RunState::Idle).await;
+
+        let calls = legacy.calls();
+        assert!(calls.len() >= 4, "unexpected call order: {calls:?}");
+        assert_eq!(calls[0], "legacy:route:paths/gtf-sunflower.ahk");
+        assert_eq!(calls[1], calls[0], "recovery must retry the failed route");
+        assert!(calls[2].contains("legacy:pattern:"));
+        assert_eq!(
+            calls.last().map(String::as_str),
+            Some("builtin:reset-convert")
+        );
+        assert_eq!(legacy.recoveries.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn gather_repeats_until_its_duration_then_runs_reset() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let profile = session_profile(1, false);
+        store.save_profile(&profile).expect("profile");
+        let engine =
+            AutomationEngine::new(Arc::new(MockBackend::default()), store).expect("engine");
+        let legacy = Arc::new(SessionLegacyPort::new(
+            false,
+            false,
+            Duration::from_millis(200),
+        ));
+        engine.install_legacy_port(Arc::clone(&legacy) as Arc<dyn LegacyExecutionPort>);
+
+        engine
+            .handle_command(CommandEnvelope::new(
+                profile.id,
+                Command::StartLegacySession {
+                    max_cycles: 1,
+                    max_minutes: 5,
+                },
+            ))
+            .await
+            .expect("start session");
+        wait_for_state(&engine, RunState::Running).await;
+        wait_for_state(&engine, RunState::Idle).await;
+
+        let calls = legacy.calls();
+        let patterns = calls
+            .iter()
+            .filter(|script_id| script_id.contains("legacy:pattern:"))
+            .count();
+        assert!(
+            patterns >= 4,
+            "pattern did not repeat until cutoff: {calls:?}"
+        );
+        assert!(legacy.cancelled_patterns.load(Ordering::SeqCst) >= 1);
+        assert_eq!(
+            calls.last().map(String::as_str),
+            Some("builtin:reset-convert")
+        );
+    }
+
+    #[tokio::test]
+    async fn recovered_gather_never_restarts_the_pattern_from_the_hive() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let profile = session_profile(5, true);
+        store.save_profile(&profile).expect("profile");
+        let engine =
+            AutomationEngine::new(Arc::new(MockBackend::default()), store).expect("engine");
+        let legacy = Arc::new(SessionLegacyPort::new(false, true, Duration::from_secs(2)));
+        engine.install_legacy_port(Arc::clone(&legacy) as Arc<dyn LegacyExecutionPort>);
+
+        engine
+            .handle_command(CommandEnvelope::new(
+                profile.id,
+                Command::StartLegacySession {
+                    max_cycles: 1,
+                    max_minutes: 5,
+                },
+            ))
+            .await
+            .expect("start session");
+        wait_for_state(&engine, RunState::NeedsAttention).await;
+
+        let calls = legacy.calls();
+        assert_eq!(
+            calls,
+            vec![
+                "legacy:route:paths/gtf-sunflower.ahk".to_owned(),
+                "legacy:pattern:patterns/Snake.ahk".to_owned(),
+            ]
+        );
+        assert_eq!(legacy.recoveries.load(Ordering::SeqCst), 1);
+        assert!(engine.snapshot().active_task.is_none());
     }
 
     #[tokio::test]

@@ -80,6 +80,26 @@ pub enum Command {
         script_id: String,
         approved_sha256: String,
     },
+    /// Runs the profile's configured field rotation as an orchestrated loop of
+    /// trusted legacy assets (travel, gather pattern, reset/convert), bounded
+    /// by cycle and wall-clock limits. Every referenced asset must already be
+    /// hash-trusted in the profile.
+    StartLegacySession {
+        max_cycles: u32,
+        max_minutes: u32,
+    },
+    /// Returns the exact generated harness for one manifest-pinned asset so a
+    /// user can review what would run before trusting or starting it.
+    InspectLegacy {
+        script_id: String,
+    },
+    /// Stores one named secret (for example the private-server link) in the
+    /// daemon's encrypted store. The value never appears in events or logs.
+    ImportSecret {
+        name: String,
+        value: String,
+    },
+    GetRunHistory,
     SaveProfile {
         profile: Box<Profile>,
     },
@@ -169,6 +189,20 @@ pub enum DaemonEvent {
     ShutdownReady {
         request_id: Uuid,
     },
+    /// Progress through an orchestrated legacy session plan.
+    SessionProgress(SessionProgress),
+    /// Review payload for one manifest-pinned legacy asset.
+    LegacyInspection(LegacyInspection),
+    /// Confirmation that a named secret was stored; the value is never echoed.
+    SecretStored {
+        name: String,
+    },
+    RunHistory {
+        entries: Vec<RunRecord>,
+    },
+    /// Passive screen-derived statistics. `None` fields mean the reading was
+    /// not confident; they are never guessed.
+    StatsSample(StatsSample),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -220,6 +254,50 @@ pub enum ActionOutcome {
     Cancelled,
     Failed,
     NeedsAttention,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct SessionProgress {
+    pub cycle: u32,
+    pub max_cycles: u32,
+    pub step_index: u32,
+    pub step_count: u32,
+    pub description: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct LegacyInspection {
+    pub script_id: String,
+    pub sha256: String,
+    pub bytes: u64,
+    pub requires_legacy_bridge: bool,
+    /// The complete generated harness that would execute, for human review.
+    pub harness_preview: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct RunRecord {
+    pub run_id: Uuid,
+    pub profile_id: Uuid,
+    /// `legacy`, `legacy_session`, or `native`.
+    pub kind: String,
+    pub started_at: DateTime<Utc>,
+    pub finished_at: DateTime<Utc>,
+    pub final_state: String,
+    pub summary: String,
+    pub steps_succeeded: u32,
+    pub steps_failed: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+pub struct StatsSample {
+    pub sampled_at: DateTime<Utc>,
+    /// Current honey read from the HUD counter; absent when OCR agreement
+    /// was insufficient.
+    pub honey: Option<u64>,
+    /// Windowed rate derived from confident samples only.
+    pub honey_per_hour: Option<f64>,
+    pub session_minutes: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]

@@ -174,6 +174,49 @@ async fn start_legacy_extension(
         .await
 }
 
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn start_legacy_session(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+    max_cycles: u32,
+    max_minutes: u32,
+) -> Result<(), String> {
+    bridge
+        .start_legacy_session(profile_id, max_cycles, max_minutes)
+        .await
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn inspect_legacy(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+    script_id: String,
+) -> Result<(), String> {
+    bridge.inspect_legacy(profile_id, script_id).await
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn import_secret(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+    name: String,
+    value: String,
+) -> Result<(), String> {
+    bridge.import_secret(profile_id, name, value).await
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)] // Tauri commands own extractor values.
+async fn get_run_history(
+    bridge: tauri::State<'_, Arc<DaemonBridge>>,
+    profile_id: Uuid,
+) -> Result<(), String> {
+    bridge.get_run_history(profile_id).await
+}
+
 pub fn run() {
     let application = tauri::Builder::default()
         .manage(ShellState::default())
@@ -203,7 +246,11 @@ pub fn run() {
             save_automation_settings,
             complete_onboarding,
             trust_extension,
-            start_legacy_extension
+            start_legacy_extension,
+            start_legacy_session,
+            inspect_legacy,
+            import_secret,
+            get_run_history
         ])
         .build(tauri::generate_context!())
         .expect("NectarPilot desktop shell failed to build");

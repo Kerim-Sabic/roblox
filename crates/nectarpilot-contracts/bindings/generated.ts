@@ -4,7 +4,12 @@ export type ActionOutcome = "succeeded" | "skipped" | "cancelled" | "failed" | "
 
 export type ActionResult = { action: string; outcome: ActionOutcome; started_at: string; finished_at: string; message: string; details?: JsonValue }
 
-export type AutomationConfig = { gathering_enabled: boolean; reconnect_enabled: boolean; rotations: FieldRotation[]; features: FeatureFlags; hotkeys: HotkeyConfig }
+export type AutomationConfig = { gathering_enabled: boolean; reconnect_enabled: boolean; rotations: FieldRotation[]; features: FeatureFlags; hotkeys: HotkeyConfig; session: SessionConfig;
+/**
+ * Manual planter reminders; the desktop shows countdowns and due badges.
+ * Nothing is placed or collected automatically from these entries.
+ */
+planters: ManualPlanterTimer[] }
 
 export type Command = { type: "start"; payload: { mode: StartMode } } | { type: "pause" } | { type: "resume" } | { type: "stop" } | { type: "emergency_stop" } |
 /**
@@ -17,7 +22,24 @@ export type Command = { type: "start"; payload: { mode: StartMode } } | { type: 
  * contained compatibility port. The daemon re-checks both this digest and
  * the profile's stored hash-bound consent before process creation.
  */
-{ type: "start_legacy"; payload: { script_id: string; approved_sha256: string } } | { type: "save_profile"; payload: { profile: Profile } } | { type: "delete_profile" } | { type: "export_profile" } | { type: "acknowledge_attention" }
+{ type: "start_legacy"; payload: { script_id: string; approved_sha256: string } } |
+/**
+ * Runs the profile's configured field rotation as an orchestrated loop of
+ * trusted legacy assets (travel, gather pattern, reset/convert), bounded
+ * by cycle and wall-clock limits. Every referenced asset must already be
+ * hash-trusted in the profile.
+ */
+{ type: "start_legacy_session"; payload: { max_cycles: number; max_minutes: number } } |
+/**
+ * Returns the exact generated harness for one manifest-pinned asset so a
+ * user can review what would run before trusting or starting it.
+ */
+{ type: "inspect_legacy"; payload: { script_id: string } } |
+/**
+ * Stores one named secret (for example the private-server link) in the
+ * daemon's encrypted store. The value never appears in events or logs.
+ */
+{ type: "import_secret"; payload: { name: string; value: string } } | { type: "get_run_history" } | { type: "save_profile"; payload: { profile: Profile } } | { type: "delete_profile" } | { type: "export_profile" } | { type: "acknowledge_attention" }
 
 export type CommandEnvelope = { protocol_version: number; request_id: string; profile_id: string; command: Command }
 
@@ -26,7 +48,24 @@ export type DaemonEvent = { type: "command_accepted"; payload: { request_id: str
  * Final acknowledgement after input cleanup. The daemon flushes this
  * event before a requested graceful process exit.
  */
-{ type: "shutdown_ready"; payload: { request_id: string } }
+{ type: "shutdown_ready"; payload: { request_id: string } } |
+/**
+ * Progress through an orchestrated legacy session plan.
+ */
+{ type: "session_progress"; payload: SessionProgress } |
+/**
+ * Review payload for one manifest-pinned legacy asset.
+ */
+{ type: "legacy_inspection"; payload: LegacyInspection } |
+/**
+ * Confirmation that a named secret was stored; the value is never echoed.
+ */
+{ type: "secret_stored"; payload: { name: string } } | { type: "run_history"; payload: { entries: RunRecord[] } } |
+/**
+ * Passive screen-derived statistics. `None` fields mean the reading was
+ * not confident; they are never guessed.
+ */
+{ type: "stats_sample"; payload: StatsSample }
 
 /**
  * A detector result that makes uncertainty impossible to confuse with a value.
@@ -59,6 +98,12 @@ export type HotkeyConfig = { start: string; pause_resume: string; stop: string; 
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | Partial<{ [key in string]: JsonValue }>
 
+export type LegacyInspection = { script_id: string; sha256: string; bytes: number; requires_legacy_bridge: boolean;
+/**
+ * The complete generated harness that would execute, for human review.
+ */
+harness_preview: string }
+
 export type LegacySnapshot = { sources: LegacySource[] }
 
 /**
@@ -66,6 +111,16 @@ export type LegacySnapshot = { sources: LegacySource[] }
  * redacted during import and remain available only in the untouched source.
  */
 export type LegacySource = { file_name: string; sha256: string; sections: Partial<{ [key in string]: Partial<{ [key in string]: string }> }> }
+
+export type ManualPlanterTimer = {
+/**
+ * Planter slot 1..=3 as shown in game.
+ */
+slot: number;
+/**
+ * Free-text description, e.g. "Blue Clay in Bamboo".
+ */
+label: string; placed_at: string; harvest_at: string }
 
 /**
  * A viewport-relative rectangle. All coordinates must be finite and in `0..=1`.
@@ -80,13 +135,41 @@ trusted_extensions?: Partial<{ [key in string]: string }>; legacy?: LegacySnapsh
 
 export type ReconnectProgress = { attempt: number; maximum_attempts: number; elapsed_seconds: number; deadline_seconds: number }
 
+export type RunRecord = { run_id: string; profile_id: string;
+/**
+ * `legacy`, `legacy_session`, or `native`.
+ */
+kind: string; started_at: string; finished_at: string; final_state: string; summary: string; steps_succeeded: number; steps_failed: number }
+
 export type RunSnapshot = { run_id: string; profile_id: string; state: RunState; safe_mode: boolean; active_task: string | null; last_sequence: number }
 
 export type RunState = "idle" | "preflight" | "running" | "paused" | "recovering" | "needs_attention" | "stopping" | "faulted"
 
 export type SafetyConfig = { item_budgets: ValuableItemBudgets; purchases_enabled: boolean; donations_enabled: boolean; trades_enabled: boolean; allow_system_power: boolean; evidence_retention_days: number; evidence_retention_megabytes: number }
 
+/**
+ * Bounds for one orchestrated legacy gather session.
+ */
+export type SessionConfig = {
+/**
+ * Seconds to remain at the hive converting after each reset step.
+ */
+convert_wait_seconds: number; default_max_cycles: number; default_max_minutes: number }
+
+export type SessionProgress = { cycle: number; max_cycles: number; step_index: number; step_count: number; description: string }
+
 export type StartMode = "normal" | "dry_run" | "diagnostics"
+
+export type StatsSample = { sampled_at: string;
+/**
+ * Current honey read from the HUD counter; absent when OCR agreement
+ * was insufficient.
+ */
+honey: number | null;
+/**
+ * Windowed rate derived from confident samples only.
+ */
+honey_per_hour: number | null; session_minutes: number }
 
 /**
  * All valuable consumables are denied until the user sets a positive budget.

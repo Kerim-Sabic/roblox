@@ -529,6 +529,58 @@ impl DaemonBridge {
         Ok(())
     }
 
+    /// Starts the orchestrated legacy gather session built from the profile's
+    /// rotations. Trust and safety re-checks happen daemon-side per step.
+    pub async fn start_legacy_session(
+        &self,
+        profile_id: Uuid,
+        max_cycles: u32,
+        max_minutes: u32,
+    ) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(
+            profile_id,
+            Command::StartLegacySession {
+                max_cycles,
+                max_minutes,
+            },
+        ))
+        .await?;
+        Ok(())
+    }
+
+    /// Requests the generated-harness review payload for one asset; the
+    /// daemon answers with a `legacy_inspection` event.
+    pub async fn inspect_legacy(&self, profile_id: Uuid, script_id: String) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(
+            profile_id,
+            Command::InspectLegacy { script_id },
+        ))
+        .await?;
+        Ok(())
+    }
+
+    /// Stores one named secret in the daemon's encrypted store. The value is
+    /// forwarded once and never cached or logged by the desktop process.
+    pub async fn import_secret(
+        &self,
+        profile_id: Uuid,
+        name: String,
+        value: String,
+    ) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(
+            profile_id,
+            Command::ImportSecret { name, value },
+        ))
+        .await?;
+        Ok(())
+    }
+
+    pub async fn get_run_history(&self, profile_id: Uuid) -> Result<(), String> {
+        self.dispatch(CommandEnvelope::new(profile_id, Command::GetRunHistory))
+            .await?;
+        Ok(())
+    }
+
     pub async fn select_profile(&self, profile_id: Uuid) -> Result<(), String> {
         self.dispatch(CommandEnvelope::new(profile_id, Command::SelectProfile))
             .await?;
@@ -1855,7 +1907,7 @@ fn project_extensions(
                 )
             } else if entry.status == LegacyEntryStatus::SafeDsl {
                 format!(
-                    "Converted from {} into the validated {} DSL asset.",
+                    "Converted from {} into the validated {} DSL asset. Preview only; native DSL execution is not connected yet.",
                     entry.source,
                     entry.generated_asset.as_deref().unwrap_or("NectarPilot")
                 )
@@ -1874,15 +1926,11 @@ fn project_extensions(
                     entry.invalid_values
                 )
             };
-            let enabled = match trust {
-                "built_in" => true,
-                "trusted" => profile.is_some_and(|profile| {
-                    profile.automation.features.custom_extensions
-                }),
-                _ => false,
-            };
+            let enabled = entry.status == LegacyEntryStatus::LegacyBridgeRequired
+                && trust == "trusted"
+                && profile.is_some_and(|profile| profile.automation.features.custom_extensions);
             let permissions = if entry.status == LegacyEntryStatus::SafeDsl {
-                vec!["Validated movement plan"]
+                vec!["Validated movement plan preview"]
             } else {
                 vec![
                     "Contained legacy AHK runner",
@@ -1900,6 +1948,7 @@ fn project_extensions(
                 "trust": trust,
                 "permissions": permissions,
                 "enabled": enabled,
+                "executionMode": if entry.status == LegacyEntryStatus::SafeDsl { "native_preview" } else { "legacy_bridge" },
             })
         })
         .collect()
@@ -2191,7 +2240,49 @@ mod tests {
                 .count(),
             102
         );
+        assert_eq!(
+            catalog
+                .iter()
+                .filter(|entry| entry.status == LegacyEntryStatus::SafeDsl)
+                .count(),
+            1
+        );
         assert!(catalog.iter().all(|entry| entry.sha256.len() == 64));
+    }
+
+    #[test]
+    fn safe_dsl_projection_is_preview_only() {
+        let catalog = legacy_catalog().expect("catalog");
+        let entries = catalog
+            .iter()
+            .map(|entry| (entry.id.clone(), AssetVerification::Verified))
+            .collect::<HashMap<_, _>>();
+        let inventory = LegacyAssetInventory {
+            layout: TrustedAssetLayout {
+                legacy_root: PathBuf::new(),
+                assets_root: None,
+                autohotkey: None,
+            },
+            entries,
+        };
+        let safe_dsl = catalog
+            .iter()
+            .find(|entry| entry.status == LegacyEntryStatus::SafeDsl)
+            .expect("safe DSL catalog entry");
+        let projected = project_extensions(catalog, None, Some(&inventory));
+        let preview = projected
+            .iter()
+            .find(|entry| entry["id"] == safe_dsl.id)
+            .expect("projected safe DSL entry");
+
+        assert_eq!(preview["trust"], "built_in");
+        assert_eq!(preview["enabled"], false);
+        assert_eq!(preview["executionMode"], "native_preview");
+        assert!(
+            preview["description"]
+                .as_str()
+                .is_some_and(|description| description.contains("Preview only"))
+        );
     }
 
     #[test]

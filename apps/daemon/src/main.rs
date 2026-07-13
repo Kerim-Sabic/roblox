@@ -11,7 +11,7 @@ use std::{
 use chrono::Utc;
 use nectarpilot_contracts::{Command, CommandEnvelope};
 use nectarpilot_core::{
-    AutomationEngine, MockBackend, SqliteStore,
+    AutomationEngine, AutomationError, MockBackend, SecretPort, SqliteStore,
     dsl::NectarProgram,
     legacy_ini::import_legacy_ini_files,
     transport::{CommandReceiver, EventSender, NamedPipeSpec},
@@ -107,6 +107,8 @@ fn initialize_engine(
             tracing::warn!(%error, "legacy compatibility port is unavailable");
         }
     }
+    engine.install_secret_port(Arc::new(DpapiSecretPort));
+    engine.set_report_directory(default_data_directory().join("reports"));
 
     if store
         .runtime_value("daemon_clean_shutdown")?
@@ -118,8 +120,167 @@ fn initialize_engine(
     Ok((store, engine))
 }
 
+/// Seals stored secrets with the current user's Windows DPAPI scope; the
+/// plaintext never leaves the daemon process.
+struct DpapiSecretPort;
+
+impl SecretPort for DpapiSecretPort {
+    fn seal(&self, plaintext: &[u8]) -> Result<Vec<u8>, AutomationError> {
+        nectarpilot_platform::secrets::protect_secret(plaintext)
+            .map_err(|error| AutomationError::Backend(error.to_string()))
+    }
+
+    fn open(&self, ciphertext: &[u8]) -> Result<Vec<u8>, AutomationError> {
+        nectarpilot_platform::secrets::unprotect_secret(ciphertext)
+            .map_err(|error| AutomationError::Backend(error.to_string()))
+    }
+}
+
+/// Passive honey statistics: once a minute, when exactly one restored Roblox
+/// client is visible, read the HUD counter and publish a sample. Reading is
+/// screen-only; an unconfident read publishes `None` rather than a guess.
+#[cfg(windows)]
+#[allow(
+    clippy::cast_precision_loss,
+    reason = "sample timestamps and honey deltas stay far below f64's exact-integer ceiling"
+)]
+fn spawn_stats_loop(engine: AutomationEngine<MockBackend>) {
+    use chrono::Utc;
+    use nectarpilot_contracts::StatsSample;
+    use nectarpilot_platform::capture::{ClientCapture, WindowsClientCapture};
+    use nectarpilot_platform::{HoneyCounterReader, RobloxSession, WindowsOcr};
+
+    std::thread::spawn(move || {
+        let ocr = match WindowsOcr::english_us() {
+            Ok(ocr) => ocr,
+            Err(error) => {
+                tracing::info!(%error, "honey statistics disabled: Windows OCR unavailable");
+                return;
+            }
+        };
+        let mut reader = HoneyCounterReader::new(ocr);
+        let session_start = Utc::now();
+        let mut confident: Vec<(chrono::DateTime<Utc>, u64)> = Vec::new();
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(60));
+            let honey = discover_roblox_clients()
+                .ok()
+                .and_then(|clients| {
+                    let mut visible = clients.into_iter().filter_map(|client| client.window);
+                    match (visible.next(), visible.next()) {
+                        (Some(snapshot), None) if !snapshot.geometry.minimized => Some(snapshot),
+                        _ => None,
+                    }
+                })
+                .and_then(|snapshot| {
+                    WindowsClientCapture
+                        .capture(&RobloxSession::from_snapshot(snapshot))
+                        .ok()
+                })
+                .and_then(|frame| reader.read(&frame).actionable(0.0).copied());
+            let now = Utc::now();
+            if let Some(value) = honey {
+                confident.push((now, value));
+                // Keep a two-hour window so the rate reflects recent play.
+                confident.retain(|(at, _)| now.signed_duration_since(*at).num_minutes() <= 120);
+            }
+            let honey_per_hour = match confident.as_slice() {
+                [first, .., last]
+                    if last.0.signed_duration_since(first.0).num_seconds() >= 300
+                        && last.1 >= first.1 =>
+                {
+                    Some(
+                        (last.1 - first.1) as f64 * 3600.0
+                            / last.0.signed_duration_since(first.0).num_seconds() as f64,
+                    )
+                }
+                _ => None,
+            };
+            engine.publish_stats(StatsSample {
+                sampled_at: now,
+                honey,
+                honey_per_hour,
+                session_minutes: now.signed_duration_since(session_start).num_seconds() as f64
+                    / 60.0,
+            });
+        }
+    });
+}
+
+#[cfg(not(windows))]
+fn spawn_stats_loop(_engine: AutomationEngine<MockBackend>) {}
+
+/// Registers the profile's global control chords and forwards presses as
+/// engine commands. Registration failure only disables hotkeys; it never
+/// blocks the daemon.
+#[cfg(windows)]
+fn spawn_hotkey_loop(engine: AutomationEngine<MockBackend>, store: &SqliteStore) {
+    use nectarpilot_platform::{WindowsHotkeySet, parse_hotkey};
+
+    let profile_id = engine.snapshot().profile_id;
+    let Some(profile) = store.load_profile(profile_id).ok().flatten() else {
+        return;
+    };
+    let hotkeys = profile.automation.hotkeys.clone();
+    let session = profile.automation.session.clone();
+    let profile_id = profile.id;
+    let runtime = tokio::runtime::Handle::current();
+    std::thread::spawn(move || {
+        let chords = [
+            (1, hotkeys.start.as_str()),
+            (2, hotkeys.pause_resume.as_str()),
+            (3, hotkeys.stop.as_str()),
+            (4, hotkeys.emergency_stop.as_str()),
+        ];
+        let mut bindings = Vec::new();
+        for (id, text) in chords {
+            if let Some(chord) = parse_hotkey(text) {
+                bindings.push((id, chord.modifiers, chord.virtual_key));
+            } else {
+                tracing::warn!(hotkey = text, "unparseable hotkey binding skipped");
+            }
+        }
+        let mut set = match WindowsHotkeySet::register(&bindings) {
+            Ok(set) => set,
+            Err(error) => {
+                tracing::warn!(%error, "global hotkeys unavailable");
+                return;
+            }
+        };
+        tracing::info!("global control hotkeys registered");
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            for id in set.poll_pressed() {
+                let command = match id {
+                    1 => Command::StartLegacySession {
+                        max_cycles: session.default_max_cycles,
+                        max_minutes: session.default_max_minutes,
+                    },
+                    2 => {
+                        if engine.state() == nectarpilot_contracts::RunState::Paused {
+                            Command::Resume
+                        } else {
+                            Command::Pause
+                        }
+                    }
+                    3 => Command::Stop,
+                    _ => Command::EmergencyStop,
+                };
+                let envelope = CommandEnvelope::new(profile_id, command);
+                let engine = engine.clone();
+                let _ = runtime.block_on(async move { engine.handle_command(envelope).await });
+            }
+        }
+    });
+}
+
+#[cfg(not(windows))]
+fn spawn_hotkey_loop(_engine: AutomationEngine<MockBackend>, _store: &SqliteStore) {}
+
 async fn serve_stdio(database: &Path, allow_mock_automation: bool) -> Result<(), Box<dyn Error>> {
     let (store, engine) = initialize_engine(database, allow_mock_automation)?;
+    spawn_stats_loop(engine.clone());
+    spawn_hotkey_loop(engine.clone(), &store);
 
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
@@ -176,6 +337,8 @@ async fn serve_pipe(database: &Path, allow_mock_automation: bool) -> Result<(), 
     let spec = NamedPipeSpec::for_current_environment();
     let mut listener = SecureNamedPipeListener::bind(spec.clone())?;
     let (store, engine) = initialize_engine(database, allow_mock_automation)?;
+    spawn_stats_loop(engine.clone());
+    spawn_hotkey_loop(engine.clone(), &store);
     tracing::info!(path = %spec.path, "secure current-user daemon pipe ready");
 
     'server: loop {

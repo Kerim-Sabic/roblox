@@ -52,6 +52,8 @@ pub enum FieldId {
     MountainTop,
     Stump,
     Ant,
+    Pepper,
+    Coconut,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -233,6 +235,54 @@ pub fn science_bear_catalog() -> QuestCatalog {
         .expect("checked-in Science Bear catalog must validate")
 }
 
+#[must_use]
+pub fn polar_bear_catalog() -> QuestCatalog {
+    QuestCatalog::from_json(include_str!("../../../assets/quests/polar-bear.v1.json"))
+        .expect("checked-in Polar Bear catalog must validate")
+}
+
+#[must_use]
+pub fn black_bear_catalog() -> QuestCatalog {
+    QuestCatalog::from_json(include_str!("../../../assets/quests/black-bear.v1.json"))
+        .expect("checked-in Black Bear catalog must validate")
+}
+
+#[must_use]
+pub fn bucko_bee_catalog() -> QuestCatalog {
+    QuestCatalog::from_json(include_str!("../../../assets/quests/bucko-bee.v1.json"))
+        .expect("checked-in Bucko Bee catalog must validate")
+}
+
+#[must_use]
+pub fn riley_bee_catalog() -> QuestCatalog {
+    QuestCatalog::from_json(include_str!("../../../assets/quests/riley-bee.v1.json"))
+        .expect("checked-in Riley Bee catalog must validate")
+}
+
+/// The typed quest knowledge available for one giver. Bucko and Riley share
+/// several quest names, so a caller must know the giver (for example from the
+/// quest-log icon detector) before constraining title OCR with this catalog.
+#[must_use]
+pub fn quest_catalog_for(giver: QuestGiver) -> Option<QuestCatalog> {
+    match giver {
+        QuestGiver::ScienceBear => Some(science_bear_catalog()),
+        QuestGiver::PolarBear => Some(polar_bear_catalog()),
+        QuestGiver::BlackBear => Some(black_bear_catalog()),
+        QuestGiver::GiftedBuckoBee => Some(bucko_bee_catalog()),
+        QuestGiver::GiftedRileyBee => Some(riley_bee_catalog()),
+        _ => None,
+    }
+}
+
+/// Givers with a checked-in catalog, in planner priority order.
+pub const CATALOGED_GIVERS: [QuestGiver; 5] = [
+    QuestGiver::ScienceBear,
+    QuestGiver::PolarBear,
+    QuestGiver::BlackBear,
+    QuestGiver::GiftedBuckoBee,
+    QuestGiver::GiftedRileyBee,
+];
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QuestMatch {
     pub id: String,
@@ -245,12 +295,31 @@ pub struct QuestMatch {
 /// considered by temporal consensus.
 #[must_use]
 pub fn detect_science_bear_title(observed: &str, ocr_confidence: f32) -> Detection<QuestMatch> {
+    detect_quest_title(QuestGiver::ScienceBear, observed, ocr_confidence)
+}
+
+/// Constrained quest-title detector for any cataloged giver. The observed text
+/// is matched only against that giver's checked-in vocabulary, so an OCR read
+/// can never invent a quest and shared Bucko/Riley names cannot cross over.
+#[must_use]
+pub fn detect_quest_title(
+    giver: QuestGiver,
+    observed: &str,
+    ocr_confidence: f32,
+) -> Detection<QuestMatch> {
+    let detector = quest_title_detector_name(giver);
     let evidence = DetectionEvidence {
-        detector: "science_bear_quest_title".to_owned(),
+        detector: detector.to_owned(),
         observed_at: Utc::now(),
         region: None,
         artifact_id: None,
         notes: Vec::new(),
+    };
+    let Some(catalog) = quest_catalog_for(giver) else {
+        return Detection::Uncertain {
+            reason: format!("no checked-in quest catalog exists for {giver:?}"),
+            evidence,
+        };
     };
     if !ocr_confidence.is_finite() || !(0.0..=1.0).contains(&ocr_confidence) {
         return Detection::Error {
@@ -276,7 +345,6 @@ pub fn detect_science_bear_title(observed: &str, ocr_confidence: f32) -> Detecti
         };
     }
 
-    let catalog = science_bear_catalog();
     let mut scored = catalog
         .quests
         .iter()
@@ -303,8 +371,9 @@ pub fn detect_science_bear_title(observed: &str, ocr_confidence: f32) -> Detecti
     let runner_up = scored.get(1).map_or(0.0, |(_, score)| *score);
     if best_score < 0.82 || best_score - runner_up < 0.08 {
         return Detection::Uncertain {
-            reason: "quest title did not uniquely match the constrained Science Bear vocabulary"
-                .to_owned(),
+            reason: format!(
+                "quest title did not uniquely match the constrained {giver:?} vocabulary"
+            ),
             evidence,
         };
     }
@@ -378,6 +447,149 @@ impl QuestTitleConsensus {
     }
 }
 
+/// Parses one OCR-read objective line from a dynamic quest giver (Brown Bear
+/// style) into a typed objective with its real amount. Only a small, exact
+/// grammar is accepted; anything else returns `None` rather than a guess:
+///
+/// - `Collect 1,500 pollen from the Pineapple Patch/Field`
+/// - `Collect 2500 white/red/blue pollen`
+/// - `Collect 300 goo [from the Bamboo Field]`
+/// - `Defeat 3 Ladybugs`
+#[must_use]
+pub fn parse_dynamic_objective(line: &str) -> Option<QuestObjective> {
+    let normalized = normalize_objective_text(line);
+    let words: Vec<&str> = normalized.split(' ').collect();
+    if words.len() < 3 || words.len() > 12 {
+        return None;
+    }
+    let amount = parse_bounded_amount(words.get(1)?)?;
+    match *words.first()? {
+        "collect" => {
+            let rest = &words[2..];
+            match rest {
+                ["pollen"] => Some(QuestObjective::Pollen {
+                    amount,
+                    field: None,
+                    color: None,
+                }),
+                ["pollen", "from", "the", field @ ..] => Some(QuestObjective::Pollen {
+                    amount,
+                    field: Some(parse_field_name(field)?),
+                    color: None,
+                }),
+                [color, "pollen"] => Some(QuestObjective::Pollen {
+                    amount,
+                    field: None,
+                    color: Some(parse_color(color)?),
+                }),
+                ["goo"] => Some(QuestObjective::Goo {
+                    amount,
+                    field: None,
+                    color: None,
+                }),
+                ["goo", "from", "the", field @ ..] => Some(QuestObjective::Goo {
+                    amount,
+                    field: Some(parse_field_name(field)?),
+                    color: None,
+                }),
+                _ => None,
+            }
+        }
+        "defeat" => {
+            let mob = words[2..].join(" ");
+            let mob = parse_mob_name(&mob)?;
+            Some(QuestObjective::Defeat { mob, count: amount })
+        }
+        _ => None,
+    }
+}
+
+fn normalize_objective_text(line: &str) -> String {
+    line.chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || character == ',' {
+                character.to_ascii_lowercase()
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn parse_bounded_amount(token: &str) -> Option<u64> {
+    let digits: String = token.chars().filter(char::is_ascii_digit).collect();
+    if digits.is_empty() || digits.len() != token.chars().filter(|c| *c != ',').count() {
+        return None;
+    }
+    let amount = digits.parse::<u64>().ok()?;
+    (1..=1_000_000_000_000).contains(&amount).then_some(amount)
+}
+
+fn parse_field_name(words: &[&str]) -> Option<FieldId> {
+    // Trailing "field"/"patch"/"forest" style suffixes are part of the
+    // in-game names but not of the FieldId mapping.
+    let trimmed: Vec<&str> = words
+        .iter()
+        .copied()
+        .filter(|word| !matches!(*word, "field" | "patch" | "forest"))
+        .collect();
+    match trimmed.join(" ").as_str() {
+        "sunflower" => Some(FieldId::Sunflower),
+        "dandelion" => Some(FieldId::Dandelion),
+        "mushroom" => Some(FieldId::Mushroom),
+        "blue flower" => Some(FieldId::BlueFlower),
+        "clover" => Some(FieldId::Clover),
+        "spider" => Some(FieldId::Spider),
+        "bamboo" => Some(FieldId::Bamboo),
+        "strawberry" => Some(FieldId::Strawberry),
+        "pineapple" => Some(FieldId::Pineapple),
+        "pumpkin" => Some(FieldId::Pumpkin),
+        "cactus" => Some(FieldId::Cactus),
+        "rose" => Some(FieldId::Rose),
+        "pine tree" => Some(FieldId::PineTree),
+        "mountain top" => Some(FieldId::MountainTop),
+        "stump" => Some(FieldId::Stump),
+        "ant" => Some(FieldId::Ant),
+        "pepper" => Some(FieldId::Pepper),
+        "coconut" => Some(FieldId::Coconut),
+        _ => None,
+    }
+}
+
+fn parse_color(word: &str) -> Option<PollenColor> {
+    match word {
+        "red" => Some(PollenColor::Red),
+        "blue" => Some(PollenColor::Blue),
+        "white" => Some(PollenColor::White),
+        _ => None,
+    }
+}
+
+fn parse_mob_name(text: &str) -> Option<String> {
+    let singular = text.strip_suffix('s').unwrap_or(text);
+    match singular {
+        "ladybug" | "rhino beetle" | "mantis" | "mantise" | "scorpion" | "spider" | "werewolf"
+        | "aphid" | "mite" => Some(singular.replace(' ', "_")),
+        _ => None,
+    }
+}
+
+/// Stable evidence-detector name for one giver's title OCR.
+#[must_use]
+pub const fn quest_title_detector_name(giver: QuestGiver) -> &'static str {
+    match giver {
+        QuestGiver::ScienceBear => "science_bear_quest_title",
+        QuestGiver::PolarBear => "polar_bear_quest_title",
+        QuestGiver::BlackBear => "black_bear_quest_title",
+        QuestGiver::GiftedBuckoBee => "bucko_bee_quest_title",
+        QuestGiver::GiftedRileyBee => "riley_bee_quest_title",
+        _ => "uncataloged_quest_title",
+    }
+}
+
 fn normalize_title(value: &str) -> String {
     value
         .chars()
@@ -395,7 +607,10 @@ fn normalize_title(value: &str) -> String {
         .join(" ")
 }
 
-fn edit_distance(left: &str, right: &str) -> usize {
+/// Levenshtein distance over characters; shared by the quest-title matcher and
+/// the platform OCR vocabulary scorer so both report consistent similarity.
+#[must_use]
+pub fn edit_distance(left: &str, right: &str) -> usize {
     let right_chars = right.chars().collect::<Vec<_>>();
     let mut previous = (0..=right_chars.len()).collect::<Vec<_>>();
     let mut current = vec![0; right_chars.len() + 1];
@@ -708,6 +923,101 @@ mod tests {
             progress: Vec::new(),
             detection_confidence: confidence,
         }
+    }
+
+    #[test]
+    fn every_cataloged_giver_loads_and_validates() {
+        for giver in CATALOGED_GIVERS {
+            let catalog = quest_catalog_for(giver).expect("cataloged giver");
+            assert!(!catalog.quests.is_empty(), "{giver:?} catalog is empty");
+            assert!(
+                catalog.quests.iter().all(|quest| quest.giver == giver),
+                "{giver:?} catalog contains foreign quests"
+            );
+        }
+        assert_eq!(science_bear_catalog().quests.len(), 31);
+        assert_eq!(polar_bear_catalog().quests.len(), 20);
+        assert_eq!(black_bear_catalog().quests.len(), 18);
+        assert_eq!(bucko_bee_catalog().quests.len(), 17);
+        assert_eq!(riley_bee_catalog().quests.len(), 17);
+        assert!(quest_catalog_for(QuestGiver::Onett).is_none());
+    }
+
+    #[test]
+    fn giver_scoped_detection_separates_shared_bucko_and_riley_titles() {
+        // "Tour" exists for both givers; each detector may only ever emit its
+        // own giver's quest.
+        let bucko = detect_quest_title(QuestGiver::GiftedBuckoBee, "Tour", 0.9);
+        let Detection::Found { value, .. } = bucko else {
+            panic!("Bucko Tour must match its catalog: {bucko:?}");
+        };
+        assert_eq!(value.id, "bucko-tour");
+
+        let riley = detect_quest_title(QuestGiver::GiftedRileyBee, "Tour", 0.9);
+        let Detection::Found { value, .. } = riley else {
+            panic!("Riley Tour must match its catalog: {riley:?}");
+        };
+        assert_eq!(value.id, "riley-tour");
+
+        // A Polar Bear reading with one OCR error still resolves uniquely.
+        let polar = detect_quest_title(QuestGiver::PolarBear, "Beetle Brevv", 0.9);
+        let Detection::Found { value, .. } = polar else {
+            panic!("near-match Polar Bear title must resolve: {polar:?}");
+        };
+        assert_eq!(value.id, "polar-beetle-brew");
+
+        // Uncataloged givers are uncertain, never fabricated.
+        assert!(matches!(
+            detect_quest_title(QuestGiver::Onett, "Anything", 0.9),
+            Detection::Uncertain { .. }
+        ));
+    }
+
+    #[test]
+    fn dynamic_objectives_parse_exactly_or_not_at_all() {
+        assert_eq!(
+            parse_dynamic_objective("Collect 1,500 pollen from the Pineapple Patch"),
+            Some(QuestObjective::Pollen {
+                amount: 1500,
+                field: Some(FieldId::Pineapple),
+                color: None,
+            })
+        );
+        assert_eq!(
+            parse_dynamic_objective("Collect 2500 white pollen"),
+            Some(QuestObjective::Pollen {
+                amount: 2500,
+                field: None,
+                color: Some(PollenColor::White),
+            })
+        );
+        assert_eq!(
+            parse_dynamic_objective("Collect 300 goo from the Bamboo Field"),
+            Some(QuestObjective::Goo {
+                amount: 300,
+                field: Some(FieldId::Bamboo),
+                color: None,
+            })
+        );
+        assert_eq!(
+            parse_dynamic_objective("Defeat 3 Ladybugs"),
+            Some(QuestObjective::Defeat {
+                mob: "ladybug".into(),
+                count: 3,
+            })
+        );
+        // Ambiguous, corrupt, or unbounded readings are never guessed.
+        assert_eq!(parse_dynamic_objective("Collect pollen"), None);
+        assert_eq!(parse_dynamic_objective("Collect 1x500 pollen"), None);
+        assert_eq!(
+            parse_dynamic_objective("Collect 99999999999999999 pollen"),
+            None
+        );
+        assert_eq!(parse_dynamic_objective("Defeat 3 Dragons"), None);
+        assert_eq!(
+            parse_dynamic_objective("Collect 500 pollen from the Lava Field"),
+            None
+        );
     }
 
     #[test]

@@ -14,6 +14,18 @@ NectarPilot treats quests as typed, versioned objectives instead of a single “
 
 The source snapshot is the community-maintained [Bee Swarm Simulator quest table](https://bee-swarm-simulator.fandom.com/wiki/Quests#Science_Bear), verified on 2026-07-11. It identifies Science Bear's objectives as a mix of pollen, mobs, crafting, and ability tokens, and documents the progression-critical Translator questline. Because the game and community data can change, the knowledge version and source URL are stored with the catalog and must be reviewed when detections stop matching.
 
+## Repeatable quest catalogs (Polar, Black, Bucko, Riley)
+
+Four additional catalogs are transcribed one-to-one from the quest tables embedded in the imported Natro Macro v1.1.2 source (`submacros/natro_macro.ahk`), the same data the legacy macro used in production:
+
+- `assets/quests/polar-bear.v1.json` — the 20-recipe Polar Bear rotation;
+- `assets/quests/black-bear.v1.json` — the 18 Black Bear pollen missions;
+- `assets/quests/bucko-bee.v1.json` and `assets/quests/riley-bee.v1.json` — the 17-quest Gifted Bucko/Riley pools.
+
+These repeatable quests use completion-bar semantics: every objective's amount is `1`, meaning "this quest bar is complete", exactly how the legacy macro tracked progress (quest-bar color, not numeric counts). The planner therefore ranks fields by objective coverage and overlap for these givers rather than by estimated time-to-target.
+
+Bucko and Riley share several quest names (`Tour`, `Tango`, `Scavenge`, ...). Title OCR alone cannot distinguish them, so `QuestTitleDetector::for_giver` requires the giver up front — in live use that signal comes from the quest-log giver icons (`bucko.png`, `riley.png`, `polar_bear*.png`, `black_bear*.png`), which are cataloged and validated in `assets/detectors/_legacy-manifest.yaml`. `detect_quest_title` never matches text across catalogs.
+
 ## Safety and scheduling rules
 
 - An uncertain quest title, objective, field calibration, or OCR value contributes no target.
