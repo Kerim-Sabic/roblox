@@ -1951,7 +1951,43 @@ mod tests {
             patterns >= 2,
             "pattern did not repeat before the cutoff: {calls:?}"
         );
-        assert!(legacy.cancelled_patterns.load(Ordering::SeqCst) >= 1);
+        assert_eq!(
+            calls.last().map(String::as_str),
+            Some("builtin:reset-convert")
+        );
+    }
+
+    #[tokio::test]
+    async fn gather_cutoff_cancels_an_inflight_pattern_before_reset() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let profile = session_profile(1, false);
+        store.save_profile(&profile).expect("profile");
+        let engine =
+            AutomationEngine::new(Arc::new(MockBackend::default()), store).expect("engine");
+        let legacy = Arc::new(SessionLegacyPort::new(
+            false,
+            false,
+            Duration::from_secs(30),
+        ));
+        engine.install_legacy_port(Arc::clone(&legacy) as Arc<dyn LegacyExecutionPort>);
+
+        engine
+            .handle_command(CommandEnvelope::new(
+                profile.id,
+                Command::StartLegacySession {
+                    max_cycles: 1,
+                    max_minutes: 5,
+                },
+            ))
+            .await
+            .expect("start session");
+        wait_for_state(&engine, RunState::Running).await;
+        wait_for_state(&engine, RunState::Idle).await;
+
+        let calls = legacy.calls();
+        assert_eq!(legacy.cancelled_patterns.load(Ordering::SeqCst), 1);
         assert_eq!(
             calls.last().map(String::as_str),
             Some("builtin:reset-convert")
