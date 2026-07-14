@@ -503,7 +503,29 @@ impl LegacyCompatibilityService {
 /// the user can repair the preserved import instead of running with a silent
 /// behavioral change.
 fn harness_settings(profile: &Profile) -> Result<HarnessSettings, LegacyCompatibilityError> {
-    let mut settings = HarnessSettings::default();
+    // The profile's explicit movement calibration is authoritative: it is set
+    // in the app and always sanitized. An imported Natro INI only fills fields
+    // the user never overrode, and defaults cover a fresh profile.
+    let movement = profile.automation.movement.sanitized();
+    let mut settings = HarnessSettings {
+        move_method: if movement.cannon_travel {
+            MoveMethod::Cannon
+        } else {
+            MoveMethod::Walk
+        },
+        hive_slot: movement.hive_slot,
+        hive_bees: movement.hive_bees,
+        key_delay: movement.key_delay,
+        move_speed: movement.walk_speed,
+        new_walk: movement.buff_corrected_walk,
+        ..HarnessSettings::default()
+    };
+    // Only consult an older imported INI until movement has been explicitly
+    // configured. Comparing against stock defaults is wrong here: selecting
+    // the exact stock values is still an intentional user override.
+    if profile.automation.movement_configured {
+        return Ok(settings);
+    }
     let Some(snapshot) = profile.legacy.as_ref() else {
         return Ok(settings);
     };
@@ -1357,6 +1379,53 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn profile_movement_config_overrides_any_imported_ini() {
+        use nectarpilot_contracts::{LegacySnapshot, LegacySource, MovementConfig};
+        use std::collections::BTreeMap;
+
+        let mut profile = Profile::new("configured");
+        // An imported INI would say Walk / 26 / slot 3, but the user set the
+        // in-app movement config, which must win and skip the INI entirely.
+        let mut settings_section = BTreeMap::new();
+        settings_section.insert("MoveMethod".to_owned(), "Walk".to_owned());
+        settings_section.insert("MoveSpeedNum".to_owned(), "26".to_owned());
+        settings_section.insert("HiveSlot".to_owned(), "3".to_owned());
+        let mut sections = BTreeMap::new();
+        sections.insert("Settings".to_owned(), settings_section);
+        profile.legacy = Some(LegacySnapshot {
+            sources: vec![LegacySource {
+                file_name: "nm_config.ini".to_owned(),
+                sha256: "0".repeat(64),
+                sections,
+            }],
+        });
+        profile.automation.movement = MovementConfig {
+            walk_speed: 41.5,
+            hive_slot: 2,
+            hive_bees: 40,
+            key_delay: 35,
+            cannon_travel: true,
+            buff_corrected_walk: true,
+        };
+        profile.automation.movement_configured = true;
+
+        let parsed = harness_settings(&profile).expect("configured movement");
+        assert_eq!(parsed.move_method, MoveMethod::Cannon);
+        assert!((parsed.move_speed - 41.5).abs() < f64::EPSILON);
+        assert_eq!(parsed.hive_slot, 2);
+        assert_eq!(parsed.hive_bees, 40);
+        assert_eq!(parsed.key_delay, 35);
+
+        // An out-of-range stored value is clamped, never rejected, so a run
+        // can always proceed with a safe calibration.
+        profile.automation.movement.walk_speed = 9999.0;
+        profile.automation.movement.hive_slot = 99;
+        let clamped = harness_settings(&profile).expect("clamped movement");
+        assert!((clamped.move_speed - 200.0).abs() < f64::EPSILON);
+        assert_eq!(clamped.hive_slot, 6);
     }
 
     #[test]

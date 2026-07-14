@@ -3,6 +3,7 @@ import {
   Check,
   CloudCog,
   Eye,
+  Gauge,
   Keyboard,
   RefreshCw,
   RotateCcw,
@@ -10,7 +11,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { NectarActions } from "../hooks/useNectarPilot";
 import {
   activeProfile,
@@ -37,7 +38,8 @@ const budgetLabels: Record<ValuableItem, { label: string; unit: string }> = {
   shrineDonations: { label: "Shrine donations", unit: "items / day" },
 };
 
-type SettingsSection = "general" | "safety" | "recovery" | "remote" | "hotkeys";
+type SettingsSection =
+  "general" | "movement" | "safety" | "recovery" | "remote" | "hotkeys";
 
 const sections: Array<{
   id: SettingsSection;
@@ -50,6 +52,13 @@ const sections: Array<{
     label: "General",
     icon: SlidersHorizontal,
     keywords: "general appearance theme profile gathering",
+  },
+  {
+    id: "movement",
+    label: "Movement",
+    icon: Gauge,
+    keywords:
+      "movement character walk speed hive slot bees key delay cannon travel calibration natro",
   },
   {
     id: "safety",
@@ -86,25 +95,77 @@ export function SettingsPage({
   onThemeChange,
 }: SettingsPageProps) {
   const profile = activeProfile(snapshot);
+  const persistedSettings = useMemo(
+    () => JSON.stringify(profile.settings),
+    [profile.settings],
+  );
   const [draft, setDraft] = useState<AutomationSettings>(() =>
     structuredClone(profile.settings),
   );
-  const [baseline, setBaseline] = useState(() =>
-    JSON.stringify(profile.settings),
-  );
+  const [baseline, setBaseline] = useState(() => persistedSettings);
+  const activeProfileRef = useRef(profile.id);
+  const persistedSettingsRef = useRef(persistedSettings);
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("general");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    setDraft(structuredClone(profile.settings));
-    setBaseline(JSON.stringify(profile.settings));
-  }, [profile.id, profile.settings]);
+    const previousProfileId = activeProfileRef.current;
+    const previousPersistedSettings = persistedSettingsRef.current;
+    activeProfileRef.current = profile.id;
+    persistedSettingsRef.current = persistedSettings;
+
+    if (previousProfileId !== profile.id) {
+      setDraft(structuredClone(profile.settings));
+      setBaseline(persistedSettings);
+      return;
+    }
+
+    if (previousPersistedSettings !== persistedSettings) {
+      // Daemon snapshots arrive frequently and are freshly projected objects.
+      // Preserve a local unsaved draft, but accept a genuine external profile
+      // update when the user has not changed anything locally.
+      setDraft((current) =>
+        JSON.stringify(current) === previousPersistedSettings
+          ? structuredClone(profile.settings)
+          : current,
+      );
+      setBaseline(persistedSettings);
+    }
+  }, [persistedSettings, profile.id, profile.settings]);
 
   const dirty = useMemo(
     () => JSON.stringify(draft) !== baseline,
     [draft, baseline],
   );
+  const movementError = useMemo(() => {
+    const movement = draft.movement;
+    if (
+      !Number.isFinite(movement.walkSpeed) ||
+      movement.walkSpeed < 10 ||
+      movement.walkSpeed > 200
+    )
+      return "Walk speed must be a number from 10 to 200.";
+    if (
+      !Number.isInteger(movement.hiveSlot) ||
+      movement.hiveSlot < 1 ||
+      movement.hiveSlot > 6
+    )
+      return "Hive slot must be a whole number from 1 to 6.";
+    if (
+      !Number.isInteger(movement.hiveBees) ||
+      movement.hiveBees < 0 ||
+      movement.hiveBees > 50
+    )
+      return "Bees in hive must be a whole number from 0 to 50.";
+    if (
+      !Number.isInteger(movement.keyDelay) ||
+      movement.keyDelay < 0 ||
+      movement.keyDelay > 1000
+    )
+      return "Key delay must be a whole number from 0 to 1000 ms.";
+    return null;
+  }, [draft.movement]);
   const visibleSections = query.trim()
     ? sections.filter(
         (section) =>
@@ -125,8 +186,9 @@ export function SettingsPage({
   };
 
   const apply = async () => {
-    await actions.saveSettings(draft);
-    setBaseline(JSON.stringify(draft));
+    if (await actions.saveSettings(draft)) {
+      setBaseline(JSON.stringify(draft));
+    }
   };
 
   const discard = () => setDraft(structuredClone(profile.settings));
@@ -150,7 +212,9 @@ export function SettingsPage({
           </button>
           <button
             className="button button-primary"
-            disabled={!dirty || pendingAction !== null}
+            disabled={
+              !dirty || movementError !== null || pendingAction !== null
+            }
             onClick={() => void apply()}
           >
             <Check size={16} />{" "}
@@ -158,6 +222,16 @@ export function SettingsPage({
           </button>
         </div>
       </section>
+
+      {movementError && (
+        <div className="inline-alert inline-alert-warning" role="alert">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>Finish the movement calibration</strong>
+            <span>{movementError}</span>
+          </div>
+        </div>
+      )}
 
       <section className="settings-layout">
         <aside className="settings-index">
@@ -263,6 +337,150 @@ export function SettingsPage({
                     }
                   />
                   <span>%</span>
+                </div>
+              </SettingRow>
+            </SettingsSectionCard>
+          )}
+
+          {activeSection === "movement" && (
+            <SettingsSectionCard
+              icon={<Gauge size={20} />}
+              title="Character movement"
+              description="Calibrate travel exactly like the Natro Macro GUI. Walk speed is the most important value — enter the exact number Roblox shows for your character."
+            >
+              <SettingRow
+                title="Walk speed"
+                description="The exact in-game movement speed (10–200). Wrong values make every route miss."
+              >
+                <div className="number-input compact-number">
+                  <input
+                    aria-label="Walk speed"
+                    type="number"
+                    min="10"
+                    max="200"
+                    step="0.5"
+                    value={draft.movement.walkSpeed}
+                    onChange={(event) =>
+                      update("movement", {
+                        ...draft.movement,
+                        walkSpeed: Number(event.target.value),
+                      })
+                    }
+                  />
+                  <span>studs/s</span>
+                </div>
+              </SettingRow>
+              <SettingRow
+                title="Hive slot"
+                description="Your hive position counting from the left (1–6)."
+              >
+                <div className="number-input compact-number">
+                  <input
+                    aria-label="Hive slot"
+                    type="number"
+                    min="1"
+                    max="6"
+                    step="1"
+                    value={draft.movement.hiveSlot}
+                    onChange={(event) =>
+                      update("movement", {
+                        ...draft.movement,
+                        hiveSlot: Number(event.target.value),
+                      })
+                    }
+                  />
+                  <span>slot</span>
+                </div>
+              </SettingRow>
+              <SettingRow
+                title="Bees in hive"
+                description="Used to time the hive return and reset (0–50)."
+              >
+                <div className="number-input compact-number">
+                  <input
+                    aria-label="Bees in hive"
+                    type="number"
+                    min="0"
+                    max="50"
+                    step="1"
+                    value={draft.movement.hiveBees}
+                    onChange={(event) =>
+                      update("movement", {
+                        ...draft.movement,
+                        hiveBees: Number(event.target.value),
+                      })
+                    }
+                  />
+                  <span>bees</span>
+                </div>
+              </SettingRow>
+              <SettingRow
+                title="Travel method"
+                description="Cannon is fastest for most hives; Walk avoids the cannon entirely."
+              >
+                <div
+                  className="segmented-control"
+                  role="group"
+                  aria-label="Travel method"
+                >
+                  {(
+                    [
+                      ["Cannon", true],
+                      ["Walk", false],
+                    ] as const
+                  ).map(([label, cannon]) => (
+                    <button
+                      key={label}
+                      className={
+                        draft.movement.cannonTravel === cannon ? "active" : ""
+                      }
+                      onClick={() =>
+                        update("movement", {
+                          ...draft.movement,
+                          cannonTravel: cannon,
+                        })
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </SettingRow>
+              <SettingRow
+                title="Buff-corrected walking"
+                description="Adjusts timing for haste and other movement buffs (Natro “NewWalk”). Keep on."
+              >
+                <Switch
+                  checked={draft.movement.buffCorrectedWalk}
+                  onChange={(checked) =>
+                    update("movement", {
+                      ...draft.movement,
+                      buffCorrectedWalk: checked,
+                    })
+                  }
+                  label="Buff-corrected walking"
+                />
+              </SettingRow>
+              <SettingRow
+                title="Key delay"
+                description="Extra milliseconds between keypresses. Raise only if the game drops inputs (0–1000)."
+              >
+                <div className="number-input compact-number">
+                  <input
+                    aria-label="Key delay"
+                    type="number"
+                    min="0"
+                    max="1000"
+                    step="1"
+                    value={draft.movement.keyDelay}
+                    onChange={(event) =>
+                      update("movement", {
+                        ...draft.movement,
+                        keyDelay: Number(event.target.value),
+                      })
+                    }
+                  />
+                  <span>ms</span>
                 </div>
               </SettingRow>
             </SettingsSectionCard>
@@ -546,7 +764,7 @@ export function SettingsPage({
             <SettingsSectionCard
               icon={<Keyboard size={20} />}
               title="Global hotkeys"
-              description="Emergency stop is always registered while NectarPilot is open."
+              description="NectarPilot attempts to register the emergency stop while it is open. Editing hotkeys is not available in this build."
             >
               {(
                 Object.entries(draft.hotkeys) as Array<
@@ -565,6 +783,8 @@ export function SettingsPage({
                   <button
                     className="hotkey-recorder"
                     aria-label={`Change ${command} hotkey`}
+                    disabled
+                    title="Hotkey editing is not available in this build."
                   >
                     <kbd>{value}</kbd>
                     <span>Change</span>

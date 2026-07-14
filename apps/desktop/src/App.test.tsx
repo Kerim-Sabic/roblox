@@ -2,10 +2,15 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
+import { MockNectarService } from "./services/nectar-service";
+
+function renderDesktop() {
+  return render(<App service={new MockNectarService()} />);
+}
 
 describe("NectarPilot desktop", () => {
   it("renders the ready dashboard with all navigation destinations", async () => {
-    render(<App />);
+    renderDesktop();
 
     expect(
       await screen.findByRole("heading", { name: "Ready when you are" }),
@@ -37,7 +42,7 @@ describe("NectarPilot desktop", () => {
 
   it("opens the compact running monitor and can return to the dashboard", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderDesktop();
     await screen.findByRole("heading", { name: "Ready when you are" });
 
     await user.click(
@@ -58,7 +63,7 @@ describe("NectarPilot desktop", () => {
 
   it("keeps safety budget edits in a draft until Apply", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderDesktop();
     await screen.findByRole("heading", { name: "Ready when you are" });
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
@@ -75,9 +80,26 @@ describe("NectarPilot desktop", () => {
     );
   });
 
+  it("keeps movement calibration editable and saves it through the desktop service", async () => {
+    const user = userEvent.setup();
+    renderDesktop();
+    await screen.findByRole("heading", { name: "Ready when you are" });
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    await user.click(screen.getByRole("button", { name: "Movement" }));
+    const walkSpeed = screen.getByRole("spinbutton", { name: "Walk speed" });
+    await user.clear(walkSpeed);
+    await user.type(walkSpeed, "34.5");
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => expect(walkSpeed).toHaveValue(34.5));
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+  });
+
   it("requires explicit confirmation before trusting a legacy extension", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderDesktop();
     await screen.findByRole("heading", { name: "Ready when you are" });
 
     await user.click(screen.getByRole("button", { name: "Extensions" }));
@@ -94,7 +116,7 @@ describe("NectarPilot desktop", () => {
 
   it("offers the contained compatibility run only after exact-digest trust", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderDesktop();
     await screen.findByRole("heading", { name: "Ready when you are" });
 
     await user.click(screen.getByRole("button", { name: "Extensions" }));
@@ -113,7 +135,7 @@ describe("NectarPilot desktop", () => {
 
   it("keeps the converted Stationary pattern out of the legacy runner", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderDesktop();
     await screen.findByRole("heading", { name: "Ready when you are" });
 
     await user.click(screen.getByRole("button", { name: "Extensions" }));
@@ -136,7 +158,7 @@ describe("NectarPilot desktop", () => {
 
   it("shows the versioned Science Bear planner instead of pretending quest OCR is ready", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderDesktop();
     await screen.findByRole("heading", { name: "Ready when you are" });
 
     await user.click(screen.getByRole("button", { name: "Quests" }));

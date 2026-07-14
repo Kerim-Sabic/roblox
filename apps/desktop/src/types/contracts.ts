@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = 2 as const;
+export const PROTOCOL_VERSION = 3 as const;
 
 export type RunState =
   | "Idle"
@@ -92,8 +92,18 @@ export interface RemotePermissions {
   systemPower: boolean;
 }
 
+export interface MovementSettings {
+  walkSpeed: number;
+  hiveSlot: number;
+  hiveBees: number;
+  keyDelay: number;
+  cannonTravel: boolean;
+  buffCorrectedWalk: boolean;
+}
+
 export interface AutomationSettings {
   features: Record<string, boolean>;
+  movement: MovementSettings;
   gathering: {
     enabled: boolean;
     fields: string[];

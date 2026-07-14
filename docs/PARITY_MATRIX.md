@@ -28,6 +28,7 @@ Public beta is blocked until every row is implemented in the Rust engine or expl
 | Monitoring | Runtime/honey/session statistics (HUD counter OCR voting + windowed honey/hr + run history/reports) | ☑ | N/A | ☑ | ☐ |
 | Planters | Manual planter reminder timers in the profile | ☑ | N/A | ☐ | ☐ |
 | Utilities | Global start/pause/stop/emergency hotkeys and legacy pause (F16) | ☑ | ☑ | ☐ | ☐ |
+| Utilities | In-app movement calibration (walk speed, hive slot/bees, travel method, key delay) | ☑ | ☑ | ☑ | ☐ |
 | Integrations | Webhooks, reports and screenshots | ☐ | ☐ | ☐ | ☐ |
 | Integrations | Permission-scoped Discord commands | ☐ | ☐ | ☐ | ☐ |
 | Utilities | Autoclicker, hotkeys, autostart and FPS | ☐ | ☐ | ☐ | ☐ |

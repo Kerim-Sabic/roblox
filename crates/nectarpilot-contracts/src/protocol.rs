@@ -6,7 +6,10 @@ use uuid::Uuid;
 
 use crate::Profile;
 
-pub const PROTOCOL_VERSION: u16 = 2;
+// Version 3 deliberately uses a new named-pipe namespace. It prevents a
+// freshly installed desktop from attaching to an already-running v2 daemon
+// that predates the movement/profile save contract.
+pub const PROTOCOL_VERSION: u16 = 3;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 pub struct CommandEnvelope {

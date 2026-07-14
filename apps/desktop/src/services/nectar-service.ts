@@ -405,6 +405,71 @@ export class MockNectarService implements NectarService {
   }
 }
 
+/**
+ * Browser previews must never impersonate a live automation desktop. A mock
+ * remains available only when a developer explicitly opts in, while ordinary
+ * web launches explain that no Roblox control is possible there.
+ */
+class DesktopRuntimeRequiredService implements NectarService {
+  private static readonly message =
+    "NectarPilot automation requires the Windows desktop app. Open the installed NectarPilot app or run `pnpm dev` from the repository root; a browser preview cannot control Roblox.";
+
+  private unavailable<T>(): Promise<T> {
+    return Promise.reject(new Error(DesktopRuntimeRequiredService.message));
+  }
+
+  getSnapshot(): Promise<DashboardSnapshot> {
+    return this.unavailable();
+  }
+
+  subscribe(): () => void {
+    return () => undefined;
+  }
+
+  start(): Promise<void> {
+    return this.unavailable();
+  }
+  acknowledgeAttention(): Promise<void> {
+    return this.unavailable();
+  }
+  pause(): Promise<void> {
+    return this.unavailable();
+  }
+  stop(): Promise<void> {
+    return this.unavailable();
+  }
+  emergencyStop(): Promise<void> {
+    return this.unavailable();
+  }
+  selectProfile(): Promise<void> {
+    return this.unavailable();
+  }
+  saveSettings(): Promise<void> {
+    return this.unavailable();
+  }
+  completeOnboarding(): Promise<void> {
+    return this.unavailable();
+  }
+  trustExtension(): Promise<void> {
+    return this.unavailable();
+  }
+  runLegacyExtension(): Promise<void> {
+    return this.unavailable();
+  }
+  startLegacySession(): Promise<void> {
+    return this.unavailable();
+  }
+  inspectLegacy(): Promise<void> {
+    return this.unavailable();
+  }
+  scanQuests(): Promise<void> {
+    return this.unavailable();
+  }
+  setCompactMode(): Promise<void> {
+    return this.unavailable();
+  }
+}
+
 declare global {
   interface Window {
     __TAURI_INTERNALS__?: unknown;
@@ -412,8 +477,8 @@ declare global {
 }
 
 export function createNectarService(): NectarService {
-  const useMock =
-    import.meta.env.VITE_FORCE_MOCK === "true" ||
-    window.__TAURI_INTERNALS__ === undefined;
-  return useMock ? new MockNectarService() : new TauriNectarService();
+  if (import.meta.env.VITE_FORCE_MOCK === "true")
+    return new MockNectarService();
+  if (window.__TAURI_INTERNALS__ !== undefined) return new TauriNectarService();
+  return new DesktopRuntimeRequiredService();
 }

@@ -244,14 +244,29 @@ fn spawn_hotkey_loop(engine: AutomationEngine<MockBackend>, store: &SqliteStore)
                 tracing::warn!(hotkey = text, "unparseable hotkey binding skipped");
             }
         }
-        let mut set = match WindowsHotkeySet::register(&bindings) {
-            Ok(set) => set,
-            Err(error) => {
-                tracing::warn!(%error, "global hotkeys unavailable");
-                return;
-            }
-        };
-        tracing::info!("global control hotkeys registered");
+        // Convenience chords are best-effort. A stale daemon or another app
+        // owning F1 must never stop us from attempting Ctrl+Shift+F12, which
+        // is the hard input-release route.
+        let (mut set, failures) = WindowsHotkeySet::register_best_effort(&bindings);
+        for (id, error) in failures {
+            let hotkey = chords
+                .iter()
+                .find_map(|(candidate, hotkey)| (*candidate == id).then_some(*hotkey))
+                .unwrap_or("unknown");
+            tracing::warn!(
+                hotkey,
+                emergency_stop = id == 4,
+                %error,
+                "global hotkey unavailable; remaining controls stay active"
+            );
+        }
+        if set.is_empty() {
+            tracing::warn!(
+                "no global control hotkeys could be registered; use the desktop controls and resolve the conflict before relying on keyboard controls"
+            );
+            return;
+        }
+        tracing::info!("available global control hotkeys registered");
         loop {
             std::thread::sleep(std::time::Duration::from_millis(50));
             for id in set.poll_pressed() {

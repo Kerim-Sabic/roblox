@@ -11,7 +11,13 @@ import {
 } from "lucide-react";
 import { activeProfile, type DashboardSnapshot } from "../types/contracts";
 
-export function MonitoringPage({ snapshot }: { snapshot: DashboardSnapshot }) {
+export function MonitoringPage({
+  snapshot,
+  onOpenSettings,
+}: {
+  snapshot: DashboardSnapshot;
+  onOpenSettings(): void;
+}) {
   const profile = activeProfile(snapshot);
   const monitoring = profile.settings.monitoring;
   const metrics = snapshot.metrics ?? [];
@@ -132,7 +138,7 @@ export function MonitoringPage({ snapshot }: { snapshot: DashboardSnapshot }) {
                 : "No bot is connected and no session data leaves this device."}
             </p>
           </div>
-          <button className="button button-secondary">
+          <button className="button button-secondary" onClick={onOpenSettings}>
             Configure permissions
           </button>
         </article>

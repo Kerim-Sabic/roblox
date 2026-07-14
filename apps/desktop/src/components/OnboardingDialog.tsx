@@ -48,7 +48,9 @@ export function OnboardingDialog({
   if (!open) return null;
 
   const finish = async () => {
-    if (!snapshot.onboardingComplete) await actions.completeOnboarding();
+    if (!snapshot.onboardingComplete && !(await actions.completeOnboarding())) {
+      return;
+    }
     onClose();
   };
 

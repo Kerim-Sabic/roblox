@@ -101,6 +101,15 @@ export function OverviewPage({
           </div>
           <button
             className="button button-secondary"
+            disabled={pendingAction !== null}
+            onClick={() => void actions.acknowledgeAttention()}
+          >
+            {pendingAction === "acknowledge-attention"
+              ? "Resetting…"
+              : "Acknowledge & reset"}
+          </button>
+          <button
+            className="button button-secondary"
             onClick={() => onNavigate("diagnostics")}
           >
             View diagnostics

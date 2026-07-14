@@ -2119,13 +2119,30 @@ fn project_profile(profile: &Profile) -> Value {
                 "stop": profile.automation.hotkeys.stop,
                 "emergencyStop": profile.automation.hotkeys.emergency_stop,
             },
+            "movement": {
+                "walkSpeed": profile.automation.movement.walk_speed,
+                "hiveSlot": profile.automation.movement.hive_slot,
+                "hiveBees": profile.automation.movement.hive_bees,
+                "keyDelay": profile.automation.movement.key_delay,
+                "cannonTravel": profile.automation.movement.cannon_travel,
+                "buffCorrectedWalk": profile.automation.movement.buff_corrected_walk,
+            },
         },
     })
 }
 
 fn safe_ui_settings() -> Value {
+    let movement = nectarpilot_contracts::MovementConfig::default();
     json!({
         "features": {},
+        "movement": {
+            "walkSpeed": movement.walk_speed,
+            "hiveSlot": movement.hive_slot,
+            "hiveBees": movement.hive_bees,
+            "keyDelay": movement.key_delay,
+            "cannonTravel": movement.cannon_travel,
+            "buffCorrectedWalk": movement.buff_corrected_walk,
+        },
         "gathering": { "enabled": false, "fields": [], "pattern": "e_lol", "minutesPerField": 1, "returnAtCapacity": 100, "driftCorrection": false },
         "safety": { "pauseOnFocusLoss": true, "requireForeground": true, "confirmHighRiskActions": true, "budgets": { "fieldDice": 0, "glitter": 0, "eggs": 0, "stickers": 0, "vouchers": 0, "shrineDonations": 0 } },
         "recovery": { "reconnectEnabled": true, "maxAttempts": 5, "deadlineMinutes": 15, "restartOnConfirmedFreeze": false },
@@ -2313,6 +2330,19 @@ pub struct UiAutomationSettings {
     recovery: UiRecoverySettings,
     monitoring: UiMonitoringSettings,
     hotkeys: UiHotkeys,
+    #[serde(default)]
+    movement: Option<UiMovementSettings>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UiMovementSettings {
+    walk_speed: f64,
+    hive_slot: u8,
+    hive_bees: u8,
+    key_delay: u16,
+    cannon_travel: bool,
+    buff_corrected_walk: bool,
 }
 
 impl UiAutomationSettings {
@@ -2361,6 +2391,20 @@ impl UiAutomationSettings {
         }
         if self.hotkeys.emergency_stop != "Ctrl+Shift+F12" {
             return Err("the hard emergency stop must remain Ctrl+Shift+F12".to_owned());
+        }
+        if let Some(movement) = &self.movement {
+            if !movement.walk_speed.is_finite() || !(10.0..=200.0).contains(&movement.walk_speed) {
+                return Err("walk speed must be between 10 and 200".to_owned());
+            }
+            if !(1..=6).contains(&movement.hive_slot) {
+                return Err("hive slot must be between 1 and 6".to_owned());
+            }
+            if movement.hive_bees > 50 {
+                return Err("hive bees must be between 0 and 50".to_owned());
+            }
+            if movement.key_delay > 1000 {
+                return Err("key delay must be between 0 and 1000 ms".to_owned());
+            }
         }
         Ok(())
     }
@@ -2439,6 +2483,20 @@ impl UiAutomationSettings {
             extension_import: self.monitoring.permissions.extension_import,
             system_power: self.monitoring.permissions.system_power,
         };
+        if let Some(movement) = &self.movement {
+            profile.automation.movement = nectarpilot_contracts::MovementConfig {
+                walk_speed: movement.walk_speed,
+                hive_slot: movement.hive_slot,
+                hive_bees: movement.hive_bees,
+                key_delay: movement.key_delay,
+                cannon_travel: movement.cannon_travel,
+                buff_corrected_walk: movement.buff_corrected_walk,
+            }
+            .sanitized();
+            // A saved desktop calibration is authoritative even when it
+            // deliberately matches Natro's stock defaults.
+            profile.automation.movement_configured = true;
+        }
 
         // These are UI invariants today. Reading them prevents silently
         // accepting a weakened projection while the input broker remains the
@@ -2589,6 +2647,59 @@ mod tests {
             run_state_label(nectarpilot_contracts::RunState::NeedsAttention),
             "NeedsAttention"
         );
+    }
+
+    #[test]
+    fn movement_settings_round_trip_through_projection_and_apply() {
+        use super::UiAutomationSettings;
+
+        let mut profile = Profile::new("mover");
+        profile.automation.movement = nectarpilot_contracts::MovementConfig {
+            walk_speed: 33.5,
+            hive_slot: 4,
+            hive_bees: 45,
+            key_delay: 25,
+            cannon_travel: false,
+            buff_corrected_walk: true,
+        };
+        // The dashboard projection exposes the exact calibration.
+        let projected = project_profile(&profile);
+        let movement = &projected["settings"]["movement"];
+        assert_eq!(movement["walkSpeed"], 33.5);
+        assert_eq!(movement["hiveSlot"], 4);
+        assert_eq!(movement["cannonTravel"], false);
+
+        // A round-trip through the UI settings payload preserves and sanitizes.
+        let payload = serde_json::json!({
+            "features": {},
+            "movement": {
+                "walkSpeed": 5000.0,
+                "hiveSlot": 9,
+                "hiveBees": 40,
+                "keyDelay": 25,
+                "cannonTravel": true,
+                "buffCorrectedWalk": false
+            },
+            "gathering": { "enabled": false, "fields": [], "pattern": "e_lol", "minutesPerField": 12, "returnAtCapacity": 100, "driftCorrection": false },
+            "safety": { "pauseOnFocusLoss": true, "requireForeground": true, "confirmHighRiskActions": true, "budgets": { "fieldDice": 0, "glitter": 0, "eggs": 0, "stickers": 0, "vouchers": 0, "shrineDonations": 0 } },
+            "recovery": { "reconnectEnabled": true, "maxAttempts": 5, "deadlineMinutes": 15, "restartOnConfirmedFreeze": false },
+            "monitoring": { "discordEnabled": false, "evidenceRetentionDays": 14, "evidenceLimitMb": 250, "permissions": { "status": false, "macroControl": false, "settings": false, "screenshots": false, "remoteInput": false, "extensionImport": false, "systemPower": false } },
+            "hotkeys": { "start": "F1", "pause": "F2", "stop": "F3", "emergencyStop": "Ctrl+Shift+F12" }
+        });
+        let settings: UiAutomationSettings =
+            serde_json::from_value(payload).expect("valid UI settings");
+        // Out-of-range walk speed is rejected by validate before apply.
+        assert!(settings.validate().is_err());
+
+        let mut ok = settings;
+        ok.movement.as_mut().unwrap().walk_speed = 40.0;
+        ok.movement.as_mut().unwrap().hive_slot = 5;
+        ok.validate().expect("in-range movement validates");
+        ok.apply_to(&mut profile);
+        assert!((profile.automation.movement.walk_speed - 40.0).abs() < f64::EPSILON);
+        assert_eq!(profile.automation.movement.hive_slot, 5);
+        assert!(!profile.automation.movement.buff_corrected_walk);
+        assert!(profile.automation.movement_configured);
     }
 
     #[test]

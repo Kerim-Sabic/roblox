@@ -49,7 +49,7 @@ impl Profile {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 #[serde(default)]
 pub struct AutomationConfig {
     pub gathering_enabled: bool,
@@ -58,6 +58,16 @@ pub struct AutomationConfig {
     pub features: FeatureFlags,
     pub hotkeys: HotkeyConfig,
     pub session: SessionConfig,
+    /// Character movement calibration used by every generated legacy harness:
+    /// walk speed, hive slot, travel method, and key delay. These are the same
+    /// values the Natro Macro GUI exposed front and center.
+    pub movement: MovementConfig,
+    /// Whether `movement` was explicitly supplied by the user-facing
+    /// calibration UI or imported from a known legacy configuration. This must
+    /// not be inferred by comparing values with defaults: a user is allowed to
+    /// deliberately choose every stock Natro value and have that decision win
+    /// over an older INI snapshot.
+    pub movement_configured: bool,
     /// Manual planter reminders; the desktop shows countdowns and due badges.
     /// Nothing is placed or collected automatically from these entries.
     pub planters: Vec<ManualPlanterTimer>,
@@ -76,8 +86,66 @@ impl Default for AutomationConfig {
             features: FeatureFlags::default(),
             hotkeys: HotkeyConfig::default(),
             session: SessionConfig::default(),
+            movement: MovementConfig::default(),
+            movement_configured: false,
             planters: Vec::new(),
             collect: Vec::new(),
+        }
+    }
+}
+
+/// How the player character travels, mirroring the Natro Macro movement
+/// settings. All values are bounds-checked again by the harness generator
+/// before any script is produced, so an out-of-range value fails closed.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Type)]
+#[serde(default)]
+pub struct MovementConfig {
+    /// The exact in-game walk speed shown by Roblox (10.0..=200.0). This is the
+    /// single most important calibration for accurate movement timing.
+    pub walk_speed: f64,
+    /// Hive slot 1..=6 as counted from the left of the hive.
+    pub hive_slot: u8,
+    /// Bees in the hive 0..=50; used by the reset/return path.
+    pub hive_bees: u8,
+    /// Extra per-key send delay in milliseconds, 0..=1000. Raise it only if the
+    /// game drops inputs on a slow machine.
+    pub key_delay: u16,
+    /// `true` travels between hive and field by cannon; `false` walks.
+    pub cannon_travel: bool,
+    /// `true` uses buff-corrected movement timing (Natro `NewWalk`); leave on.
+    pub buff_corrected_walk: bool,
+}
+
+impl Default for MovementConfig {
+    fn default() -> Self {
+        // Natro Macro stock defaults.
+        Self {
+            walk_speed: 28.0,
+            hive_slot: 6,
+            hive_bees: 50,
+            key_delay: 20,
+            cannon_travel: true,
+            buff_corrected_walk: true,
+        }
+    }
+}
+
+impl MovementConfig {
+    /// Clamps every field into its supported range. The UI validates too, but
+    /// this guarantees a stored profile can never produce an invalid harness.
+    #[must_use]
+    pub fn sanitized(self) -> Self {
+        Self {
+            walk_speed: if self.walk_speed.is_finite() {
+                self.walk_speed.clamp(10.0, 200.0)
+            } else {
+                28.0
+            },
+            hive_slot: self.hive_slot.clamp(1, 6),
+            hive_bees: self.hive_bees.min(50),
+            key_delay: self.key_delay.min(1000),
+            cannon_travel: self.cannon_travel,
+            buff_corrected_walk: self.buff_corrected_walk,
         }
     }
 }

@@ -6,6 +6,20 @@ export type ActionResult = { action: string; outcome: ActionOutcome; started_at:
 
 export type AutomationConfig = { gathering_enabled: boolean; reconnect_enabled: boolean; rotations: FieldRotation[]; features: FeatureFlags; hotkeys: HotkeyConfig; session: SessionConfig;
 /**
+ * Character movement calibration used by every generated legacy harness:
+ * walk speed, hive slot, travel method, and key delay. These are the same
+ * values the Natro Macro GUI exposed front and center.
+ */
+movement: MovementConfig;
+/**
+ * Whether `movement` was explicitly supplied by the user-facing
+ * calibration UI or imported from a known legacy configuration. This must
+ * not be inferred by comparing values with defaults: a user is allowed to
+ * deliberately choose every stock Natro value and have that decision win
+ * over an older INI snapshot.
+ */
+movement_configured: boolean;
+/**
  * Manual planter reminders; the desktop shows countdowns and due badges.
  * Nothing is placed or collected automatically from these entries.
  */
@@ -154,6 +168,39 @@ slot: number;
  * Free-text description, e.g. "Blue Clay in Bamboo".
  */
 label: string; placed_at: string; harvest_at: string }
+
+/**
+ * How the player character travels, mirroring the Natro Macro movement
+ * settings. All values are bounds-checked again by the harness generator
+ * before any script is produced, so an out-of-range value fails closed.
+ */
+export type MovementConfig = {
+/**
+ * The exact in-game walk speed shown by Roblox (10.0..=200.0). This is the
+ * single most important calibration for accurate movement timing.
+ */
+walk_speed: number;
+/**
+ * Hive slot 1..=6 as counted from the left of the hive.
+ */
+hive_slot: number;
+/**
+ * Bees in the hive 0..=50; used by the reset/return path.
+ */
+hive_bees: number;
+/**
+ * Extra per-key send delay in milliseconds, 0..=1000. Raise it only if the
+ * game drops inputs on a slow machine.
+ */
+key_delay: number;
+/**
+ * `true` travels between hive and field by cannon; `false` walks.
+ */
+cannon_travel: boolean;
+/**
+ * `true` uses buff-corrected movement timing (Natro `NewWalk`); leave on.
+ */
+buff_corrected_walk: boolean }
 
 /**
  * A viewport-relative rectangle. All coordinates must be finite and in `0..=1`.

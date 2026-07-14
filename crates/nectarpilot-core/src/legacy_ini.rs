@@ -6,7 +6,7 @@ use std::{
 
 use chrono::Utc;
 use nectarpilot_contracts::{
-    FieldRotation, LegacySnapshot, LegacySource, Profile, ValuableItemBudgets,
+    FieldRotation, LegacySnapshot, LegacySource, MovementConfig, Profile, ValuableItemBudgets,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -154,6 +154,7 @@ fn map_main_config(
             &mut profile.automation.hotkeys.stop,
             mapped,
         );
+        map_movement_settings(file_name, settings, profile, mapped, report);
     }
 
     if let Some(gather) = find_section(sections, "Gather") {
@@ -232,6 +233,109 @@ fn map_main_config(
             mapped,
             report,
         );
+    }
+}
+
+/// Imports the movement values that Natro exposes in its main Settings page.
+/// A complete valid set becomes authoritative immediately; an invalid value is
+/// retained in the legacy snapshot and reported instead of silently changing
+/// how the player moves. The user can then explicitly repair it in
+/// `NectarPilot`'s Movement page.
+fn map_movement_settings(
+    file_name: &str,
+    settings: &BTreeMap<String, String>,
+    profile: &mut Profile,
+    mapped: &mut HashSet<LegacySettingRef>,
+    report: &mut LegacyImportReport,
+) {
+    let mut movement: MovementConfig = profile.automation.movement;
+    let mut saw_setting = false;
+    let mut valid = true;
+
+    if let Some((actual, value)) = find_value(settings, "MoveMethod") {
+        mark(mapped, file_name, "Settings", actual);
+        saw_setting = true;
+        match value.trim().to_ascii_lowercase().as_str() {
+            "cannon" => movement.cannon_travel = true,
+            "walk" => movement.cannon_travel = false,
+            _ => {
+                valid = false;
+                report.warnings.push(format!(
+                    "{file_name} [Settings] {actual} has invalid value {value:?}; expected Walk or Cannon"
+                ));
+            }
+        }
+    }
+    if let Some((actual, value)) = find_value(settings, "HiveSlot") {
+        mark(mapped, file_name, "Settings", actual);
+        saw_setting = true;
+        match value.trim().parse::<u8>() {
+            Ok(slot) if (1..=6).contains(&slot) => movement.hive_slot = slot,
+            _ => {
+                valid = false;
+                report.warnings.push(format!(
+                    "{file_name} [Settings] {actual} has invalid value {value:?}; expected an integer from 1 to 6"
+                ));
+            }
+        }
+    }
+    if let Some((actual, value)) = find_value(settings, "HiveBees") {
+        mark(mapped, file_name, "Settings", actual);
+        saw_setting = true;
+        match value.trim().parse::<u8>() {
+            Ok(bees) if bees <= 50 => movement.hive_bees = bees,
+            _ => {
+                valid = false;
+                report.warnings.push(format!(
+                    "{file_name} [Settings] {actual} has invalid value {value:?}; expected an integer from 0 to 50"
+                ));
+            }
+        }
+    }
+    if let Some((actual, value)) = find_value(settings, "KeyDelay") {
+        mark(mapped, file_name, "Settings", actual);
+        saw_setting = true;
+        match value.trim().parse::<u16>() {
+            Ok(delay) if delay <= 1_000 => movement.key_delay = delay,
+            _ => {
+                valid = false;
+                report.warnings.push(format!(
+                    "{file_name} [Settings] {actual} has invalid value {value:?}; expected an integer from 0 to 1000"
+                ));
+            }
+        }
+    }
+    if let Some((actual, value)) = find_value(settings, "MoveSpeedNum") {
+        mark(mapped, file_name, "Settings", actual);
+        saw_setting = true;
+        match value.trim().parse::<f64>() {
+            Ok(speed) if speed.is_finite() && (10.0..=200.0).contains(&speed) => {
+                movement.walk_speed = speed;
+            }
+            _ => {
+                valid = false;
+                report.warnings.push(format!(
+                    "{file_name} [Settings] {actual} has invalid value {value:?}; expected a finite number from 10 to 200"
+                ));
+            }
+        }
+    }
+    if let Some((actual, value)) = find_value(settings, "NewWalk") {
+        mark(mapped, file_name, "Settings", actual);
+        saw_setting = true;
+        if let Some(enabled) = parse_bool(value) {
+            movement.buff_corrected_walk = enabled;
+        } else {
+            valid = false;
+            report.warnings.push(format!(
+                "{file_name} [Settings] {actual} has invalid value {value:?}; expected 0 or 1"
+            ));
+        }
+    }
+
+    if saw_setting && valid {
+        profile.automation.movement = movement.sanitized();
+        profile.automation.movement_configured = true;
     }
 }
 
@@ -460,12 +564,19 @@ mod tests {
     fn imports_known_values_reports_unknown_and_preserves_source() {
         let directory = tempdir().expect("temp directory");
         let path = directory.path().join("nm_config.ini");
-        let original = b"[Settings]\nStartHotkey=F8\nPrivServer=https://secret\nMystery=abc\n[Gather]\nFieldName1=Sunflower\nFieldPattern1=Snake\nFieldUntilMins1=12\nFieldPatternReps1=2\n[Boost]\nAFBDiceLimitEnable=1\nAFBDiceLimit=3\n";
+        let original = b"[Settings]\nStartHotkey=F8\nMoveMethod=Walk\nMoveSpeedNum=34.5\nHiveSlot=3\nHiveBees=42\nKeyDelay=27\nNewWalk=0\nPrivServer=https://secret\nMystery=abc\n[Gather]\nFieldName1=Sunflower\nFieldPattern1=Snake\nFieldUntilMins1=12\nFieldPatternReps1=2\n[Boost]\nAFBDiceLimitEnable=1\nAFBDiceLimit=3\n";
         fs::write(&path, original).expect("fixture");
 
         let imported = import_legacy_ini_files([&path], "Imported").expect("import");
         assert_eq!(fs::read(&path).expect("unchanged source"), original);
         assert_eq!(imported.profile.automation.hotkeys.start, "F8");
+        assert!(imported.profile.automation.movement_configured);
+        assert!(!imported.profile.automation.movement.cannon_travel);
+        assert_eq!(imported.profile.automation.movement.hive_slot, 3);
+        assert_eq!(imported.profile.automation.movement.hive_bees, 42);
+        assert_eq!(imported.profile.automation.movement.key_delay, 27);
+        assert!(!imported.profile.automation.movement.buff_corrected_walk);
+        assert!((imported.profile.automation.movement.walk_speed - 34.5).abs() < f64::EPSILON);
         assert_eq!(imported.profile.automation.rotations[0].gather_seconds, 720);
         assert_eq!(imported.profile.safety.item_budgets.dice, 3);
         assert!(

@@ -12,8 +12,8 @@ pub mod bindings;
 pub use detection::{Detection, DetectionEvidence, NormalizedRegion};
 pub use profile::{
     AutomationConfig, CollectTask, DiscordConfig, DiscordPermissions, FeatureFlags, FieldRotation,
-    HotkeyConfig, LegacySnapshot, LegacySource, ManualPlanterTimer, PROFILE_SCHEMA_VERSION,
-    Profile, SafetyConfig, SessionConfig, ValuableItemBudgets,
+    HotkeyConfig, LegacySnapshot, LegacySource, ManualPlanterTimer, MovementConfig,
+    PROFILE_SCHEMA_VERSION, Profile, SafetyConfig, SessionConfig, ValuableItemBudgets,
 };
 pub use protocol::{
     ActionOutcome, ActionResult, Command, CommandEnvelope, DaemonEvent, EventEnvelope, EventLevel,
