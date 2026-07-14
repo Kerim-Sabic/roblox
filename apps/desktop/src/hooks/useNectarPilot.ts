@@ -85,9 +85,19 @@ export function useNectarPilot(
 
   useEffect(() => {
     let mounted = true;
-    const unsubscribe = service.subscribe((nextSnapshot) => {
-      if (mounted) applySnapshot(nextSnapshot);
-    });
+    const unsubscribe = service.subscribe(
+      (nextSnapshot) => {
+        if (mounted) applySnapshot(nextSnapshot);
+      },
+      (cause) => {
+        // Background event refreshes used to reject without an observer, which
+        // made a disconnected or stale daemon look like a working desktop.
+        // Keep the last known snapshot visible, but make the failed refresh
+        // actionable in the global error banner.
+        if (mounted)
+          setError(`Live status refresh failed: ${errorMessage(cause)}`);
+      },
+    );
 
     void refreshSnapshot()
       .catch((cause: unknown) => {

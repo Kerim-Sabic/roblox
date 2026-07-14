@@ -10,7 +10,7 @@ import {
   Timer,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { NectarActions } from "../hooks/useNectarPilot";
 import { activeProfile, type DashboardSnapshot } from "../types/contracts";
 
@@ -148,8 +148,51 @@ const patternOptions: PatternOption[] = [
   { value: "Squares", file: "Squares.ahk", label: "Squares" },
 ];
 
+// Keep this small compatibility map aligned with `field_route` in the core
+// session planner.  Imported Natro profiles commonly use short names such as
+// "Sunflower" or "Pine Tree" while the desktop picker uses the friendly
+// labels below.  Both forms resolve to the same pinned route; an imported
+// alias must never make a valid saved plan look unavailable in the UI.
+const legacyFieldAliases: Readonly<Record<string, string>> = {
+  bamboo: "Bamboo Field",
+  blueflower: "Blue Flower Field",
+  cactus: "Cactus Field",
+  clover: "Clover Field",
+  coconut: "Coconut Field",
+  dandelion: "Dandelion Field",
+  mountaintop: "Mountain Top Field",
+  mushroom: "Mushroom Field",
+  pepper: "Pepper Patch",
+  pepperfield: "Pepper Patch",
+  pineapple: "Pineapple Patch",
+  pineapplefield: "Pineapple Patch",
+  pinetree: "Pine Tree Forest",
+  pineforest: "Pine Tree Forest",
+  pumpkin: "Pumpkin Patch",
+  pumpkinfield: "Pumpkin Patch",
+  rose: "Rose Field",
+  spider: "Spider Field",
+  strawberry: "Strawberry Field",
+  stump: "Stump Field",
+  sunflower: "Sunflower Field",
+};
+
+function fieldSlug(field: string): string {
+  return field.replaceAll(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
 function fieldFor(label: string): FieldOption | undefined {
-  return fieldOptions.find((field) => field.label === label);
+  const slug = fieldSlug(label);
+  const canonical = legacyFieldAliases[slug];
+  return fieldOptions.find(
+    (field) => fieldSlug(field.label) === slug || field.label === canonical,
+  );
+}
+
+function isSameField(left: string, right: string): boolean {
+  const leftRoute = fieldFor(left)?.route;
+  const rightRoute = fieldFor(right)?.route;
+  return leftRoute && rightRoute ? leftRoute === rightRoute : left === right;
 }
 
 interface GatherPageProps {
@@ -164,13 +207,44 @@ export function GatherPage({
   pendingAction,
 }: GatherPageProps) {
   const profile = activeProfile(snapshot);
-  const [draft, setDraft] = useState(() => structuredClone(profile.settings));
-  const [savedSignature, setSavedSignature] = useState(() =>
-    JSON.stringify(profile.settings.gathering),
+  const persistedGathering = useMemo(
+    () => JSON.stringify(profile.settings.gathering),
+    [profile.settings.gathering],
   );
+  const [draft, setDraft] = useState(() => structuredClone(profile.settings));
+  const [savedSignature, setSavedSignature] = useState(persistedGathering);
   const [fieldToAdd, setFieldToAdd] = useState(fieldOptions[0]!.label);
   const [trustDialogOpen, setTrustDialogOpen] = useState(false);
   const [trustConfirmed, setTrustConfirmed] = useState(false);
+  const activeProfileRef = useRef(profile.id);
+  const persistedGatheringRef = useRef(persistedGathering);
+
+  useEffect(() => {
+    const previousProfileId = activeProfileRef.current;
+    const previousGathering = persistedGatheringRef.current;
+    activeProfileRef.current = profile.id;
+    persistedGatheringRef.current = persistedGathering;
+
+    if (previousProfileId !== profile.id) {
+      setDraft(structuredClone(profile.settings));
+      setSavedSignature(persistedGathering);
+      return;
+    }
+
+    if (previousGathering !== persistedGathering) {
+      // The desktop can first render the daemon's temporary unavailable
+      // profile before the Profiles event arrives.  Hydrate that clean draft
+      // with the real document, but do not discard a user's unsaved edits
+      // when a later daemon snapshot is projected.
+      setDraft((current) =>
+        JSON.stringify(current.gathering) === previousGathering
+          ? structuredClone(profile.settings)
+          : current,
+      );
+      setSavedSignature(persistedGathering);
+    }
+  }, [persistedGathering, profile.id, profile.settings]);
+
   const dirty = useMemo(
     () => JSON.stringify(draft.gathering) !== savedSignature,
     [draft.gathering, savedSignature],
@@ -236,7 +310,8 @@ export function GatherPage({
   };
 
   const addField = () => {
-    if (draft.gathering.fields.includes(fieldToAdd)) return;
+    if (draft.gathering.fields.some((field) => isSameField(field, fieldToAdd)))
+      return;
     updateGathering({
       enabled: true,
       fields: [...draft.gathering.fields, fieldToAdd],
@@ -470,7 +545,9 @@ export function GatherPage({
               </select>
               <button
                 className="button button-secondary button-small"
-                disabled={draft.gathering.fields.includes(fieldToAdd)}
+                disabled={draft.gathering.fields.some((field) =>
+                  isSameField(field, fieldToAdd),
+                )}
                 onClick={addField}
               >
                 <MapPin size={15} /> Add field

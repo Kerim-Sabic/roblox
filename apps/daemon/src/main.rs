@@ -4,6 +4,7 @@ mod quest_scan;
 use std::{
     env,
     error::Error,
+    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     sync::Arc,
@@ -214,6 +215,37 @@ fn spawn_stats_loop(engine: AutomationEngine<MockBackend>) {
 #[cfg(not(windows))]
 fn spawn_stats_loop(_engine: AutomationEngine<MockBackend>) {}
 
+/// Passive HUD sampling uses Windows capture and OCR APIs. Those APIs run in
+/// native code outside Rust's unwind boundary, so a driver/OCR fault can bring
+/// down the entire daemon instead of merely returning an OCR error. Keep the
+/// experimental sampler off in ordinary desktop builds until it is isolated in
+/// a worker process. Core automation does not depend on this passive sampler.
+fn experimental_stats_enabled_from(value: Option<OsString>) -> bool {
+    value.is_some_and(|value| {
+        matches!(
+            value.to_string_lossy().trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        )
+    })
+}
+
+fn experimental_stats_enabled() -> bool {
+    experimental_stats_enabled_from(env::var_os("NECTARPILOT_ENABLE_EXPERIMENTAL_STATS"))
+}
+
+fn spawn_optional_stats_loop(engine: AutomationEngine<MockBackend>) {
+    if experimental_stats_enabled() {
+        tracing::warn!(
+            "experimental passive HUD OCR is enabled; it is not part of the stable automation path"
+        );
+        spawn_stats_loop(engine);
+    } else {
+        tracing::info!(
+            "passive HUD statistics are disabled by default while Windows OCR capture is isolated"
+        );
+    }
+}
+
 /// Registers the profile's global control chords and forwards presses as
 /// engine commands. Registration failure only disables hotkeys; it never
 /// blocks the daemon.
@@ -298,7 +330,7 @@ fn spawn_hotkey_loop(_engine: AutomationEngine<MockBackend>, _store: &SqliteStor
 
 async fn serve_stdio(database: &Path, allow_mock_automation: bool) -> Result<(), Box<dyn Error>> {
     let (store, engine) = initialize_engine(database, allow_mock_automation)?;
-    spawn_stats_loop(engine.clone());
+    spawn_optional_stats_loop(engine.clone());
     spawn_hotkey_loop(engine.clone(), &store);
 
     let stdin = tokio::io::stdin();
@@ -356,7 +388,7 @@ async fn serve_pipe(database: &Path, allow_mock_automation: bool) -> Result<(), 
     let spec = NamedPipeSpec::for_current_environment();
     let mut listener = SecureNamedPipeListener::bind(spec.clone())?;
     let (store, engine) = initialize_engine(database, allow_mock_automation)?;
-    spawn_stats_loop(engine.clone());
+    spawn_optional_stats_loop(engine.clone());
     spawn_hotkey_loop(engine.clone(), &store);
     tracing::info!(path = %spec.path, "secure current-user daemon pipe ready");
 
@@ -583,4 +615,33 @@ fn default_data_directory() -> PathBuf {
         // prevents a second empty database from confusing diagnostics.
         |local_app_data| PathBuf::from(local_app_data).join("com.nectarpilot.desktop"),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ffi::OsString;
+
+    use super::experimental_stats_enabled_from;
+
+    #[test]
+    fn passive_stats_are_opt_in_only() {
+        for disabled in [
+            None,
+            Some(""),
+            Some("0"),
+            Some("false"),
+            Some("no"),
+            Some("off"),
+        ] {
+            assert!(
+                !experimental_stats_enabled_from(disabled.map(OsString::from)),
+                "{disabled:?} must not start native capture/OCR"
+            );
+        }
+        for enabled in ["1", "true", "TRUE", "yes", "on"] {
+            assert!(experimental_stats_enabled_from(Some(OsString::from(
+                enabled
+            ))));
+        }
+    }
 }
