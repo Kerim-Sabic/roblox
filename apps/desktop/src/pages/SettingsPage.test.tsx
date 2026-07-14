@@ -14,7 +14,7 @@ const actions: NectarActions = {
   emergencyStop: vi.fn().mockResolvedValue(undefined),
   selectProfile: vi.fn().mockResolvedValue(undefined),
   saveSettings: vi.fn().mockResolvedValue(true),
-  completeOnboarding: vi.fn().mockResolvedValue(undefined),
+  completeOnboarding: vi.fn().mockResolvedValue(true),
   trustExtension: vi.fn().mockResolvedValue(true),
   runLegacyExtension: vi.fn().mockResolvedValue(undefined),
   startLegacySession: vi.fn().mockResolvedValue(undefined),

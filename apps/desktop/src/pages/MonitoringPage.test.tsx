@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMockSnapshot } from "../services/seed";
 import { MonitoringPage } from "./MonitoringPage";
 
@@ -32,7 +32,7 @@ describe("MonitoringPage", () => {
       },
     ];
 
-    render(<MonitoringPage snapshot={snapshot} />);
+    render(<MonitoringPage snapshot={snapshot} onOpenSettings={vi.fn()} />);
 
     expect(screen.getByText("Active profile completed safely")).toBeVisible();
     expect(

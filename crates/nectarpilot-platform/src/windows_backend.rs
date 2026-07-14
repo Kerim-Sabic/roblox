@@ -434,6 +434,38 @@ impl WindowsHotkeySet {
         })
     }
 
+    /// Registers every usable chord independently. This is intended for the
+    /// desktop daemon's optional convenience controls: another application
+    /// owning F1 must never prevent `NectarPilot` from attempting the hard
+    /// Ctrl+Shift+F12 emergency stop.
+    ///
+    /// Unlike [`Self::register`], successful registrations are kept when a
+    /// later binding is unavailable. The returned failures are paired with the
+    /// caller-provided identifiers so the UI/diagnostics layer can name the
+    /// unavailable chord precisely.
+    #[must_use]
+    pub fn register_best_effort(bindings: &[(i32, u32, u32)]) -> (Self, Vec<(i32, String)>) {
+        let (registered, failures) = register_best_effort_with(bindings, |id, modifiers, key| {
+            // SAFETY: a null HWND creates a thread-associated hotkey. The
+            // returned set remains on this same thread until it unregisters
+            // the identifiers in Drop.
+            unsafe { RegisterHotKey(None, id, HOT_KEY_MODIFIERS(modifiers) | MOD_NOREPEAT, key) }
+                .map_err(|error| error.to_string())
+        });
+        (
+            Self {
+                ids: registered,
+                _thread_affinity: PhantomData,
+            },
+            failures,
+        )
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.ids.is_empty()
+    }
+
     /// Drains pending hotkey messages, returning the pressed identifiers.
     #[must_use]
     pub fn poll_pressed(&mut self) -> Vec<i32> {
@@ -452,6 +484,34 @@ impl WindowsHotkeySet {
         }
         pressed
     }
+}
+
+/// Performs the all-attempts policy independently of the Win32 call so its
+/// safety property can be regression-tested without claiming real hotkeys in
+/// a test process.
+fn register_best_effort_with<F>(
+    bindings: &[(i32, u32, u32)],
+    mut register: F,
+) -> (Vec<i32>, Vec<(i32, String)>)
+where
+    F: FnMut(i32, u32, u32) -> Result<(), String>,
+{
+    let mut registered = Vec::with_capacity(bindings.len());
+    let mut failures = Vec::new();
+    for (id, modifiers, virtual_key) in bindings {
+        if !(0..=0xBFFF).contains(id) {
+            failures.push((
+                *id,
+                "global hotkey identifier must be in 0..=0xBFFF".to_owned(),
+            ));
+            continue;
+        }
+        match register(*id, *modifiers, *virtual_key) {
+            Ok(()) => registered.push(*id),
+            Err(error) => failures.push((*id, error)),
+        }
+    }
+    (registered, failures)
 }
 
 impl Drop for WindowsHotkeySet {
@@ -760,7 +820,7 @@ fn query_image_path(handle: &OwnedProcessHandle) -> windows::core::Result<PathBu
 
 #[cfg(test)]
 mod tests {
-    use super::{PROCESSENTRY32W, process_entry_name};
+    use super::{PROCESSENTRY32W, process_entry_name, register_best_effort_with};
 
     #[test]
     fn process_snapshot_name_stops_at_the_first_nul() {
@@ -770,5 +830,23 @@ mod tests {
             .collect::<Vec<_>>();
         entry.szExeFile[..encoded.len()].copy_from_slice(&encoded);
         assert_eq!(process_entry_name(&entry), "RobloxPlayerBeta.exe");
+    }
+
+    #[test]
+    fn conflicted_start_hotkey_does_not_skip_emergency_stop_registration() {
+        let bindings = [(1, 0, 0x70), (2, 0, 0x71), (3, 0, 0x72), (4, 6, 0x7B)];
+        let mut attempted = Vec::new();
+        let (registered, failures) = register_best_effort_with(&bindings, |id, _, _| {
+            attempted.push(id);
+            if id == 1 {
+                Err("already registered".to_owned())
+            } else {
+                Ok(())
+            }
+        });
+
+        assert_eq!(attempted, vec![1, 2, 3, 4]);
+        assert_eq!(registered, vec![2, 3, 4]);
+        assert_eq!(failures, vec![(1, "already registered".to_owned())]);
     }
 }

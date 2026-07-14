@@ -144,13 +144,17 @@ export default function App({ service }: { service?: NectarService }) {
                   <Flower2 size={20} />
                 </span>
                 <div>
-                  <strong>Next available activity</strong>
+                  <strong>Activity scheduling unavailable</strong>
                   <p>
-                    King Beetle is ready. The scheduler will visit after the
-                    current gathering cycle.
+                    Native activity scheduling is not connected yet. Use Gather
+                    or a reviewed contained script under Extensions.
                   </p>
                 </div>
-                <button className="button button-secondary button-small">
+                <button
+                  className="button button-secondary button-small"
+                  disabled
+                  title="Activity scheduling is not available in this build."
+                >
                   View schedule
                 </button>
               </div>
@@ -278,7 +282,12 @@ export default function App({ service }: { service?: NectarService }) {
           />
         );
       case "monitoring":
-        return <MonitoringPage snapshot={snapshot} />;
+        return (
+          <MonitoringPage
+            snapshot={snapshot}
+            onOpenSettings={() => setActivePage("settings")}
+          />
+        );
       case "extensions":
         return (
           <ExtensionsPage

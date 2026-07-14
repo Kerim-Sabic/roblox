@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  CheckCircle2,
   Copy,
   Database,
   Download,
@@ -33,7 +32,6 @@ export function DiagnosticsPage({
 }) {
   const [level, setLevel] = useState<(typeof levels)[number]>("all");
   const [query, setQuery] = useState("");
-  const [bundleReady, setBundleReady] = useState(false);
   const logs = useMemo(
     () =>
       snapshot.logs.filter((log) => {
@@ -65,9 +63,10 @@ export function DiagnosticsPage({
           </button>
           <button
             className="button button-primary"
-            onClick={() => setBundleReady(true)}
+            disabled
+            title="Support-bundle export is not connected in this build."
           >
-            <Download size={16} /> Export support bundle
+            <Download size={16} /> Export unavailable
           </button>
         </div>
       </section>
@@ -92,25 +91,23 @@ export function DiagnosticsPage({
           </button>
         </div>
       )}
-      {bundleReady && (
-        <div className="inline-alert inline-alert-success" role="status">
-          <CheckCircle2 size={18} />
-          <div>
-            <strong>Redacted bundle prepared</strong>
-            <span>
-              Full-screen captures, private links, tokens, and account
-              identifiers were excluded.
-            </span>
-          </div>
-          <button
-            className="icon-button"
-            aria-label="Dismiss bundle notification"
-            onClick={() => setBundleReady(false)}
-          >
-            ×
-          </button>
+      <div className="inline-note" role="note">
+        <AlertTriangle size={17} />
+        <div>
+          <strong>Support-bundle export unavailable</strong>
+          <span>
+            This build can show local diagnostics, but exporting bundles,
+            copying logs, and clearing stored logs are not connected yet.
+          </span>
         </div>
-      )}
+        <button
+          className="icon-button"
+          aria-label="Support-bundle export unavailable"
+          disabled
+        >
+          Unavailable
+        </button>
+      </div>
       <section className="diagnostic-status-grid">
         <DiagnosticStatus
           icon={<MonitorCog />}
@@ -227,6 +224,7 @@ export function DiagnosticsPage({
               className="icon-button"
               title="Copy visible logs"
               aria-label="Copy visible logs"
+              disabled
             >
               <Copy size={16} />
             </button>
@@ -234,6 +232,7 @@ export function DiagnosticsPage({
               className="icon-button"
               title="Clear view"
               aria-label="Clear log view"
+              disabled
             >
               <Trash2 size={16} />
             </button>

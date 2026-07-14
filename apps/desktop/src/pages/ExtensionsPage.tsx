@@ -42,6 +42,10 @@ export function ExtensionsPage({
   const [confirmed, setConfirmed] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CatalogFilter>("all");
+  const [runFeedback, setRunFeedback] = useState<{
+    tone: "success" | "warning";
+    message: string;
+  } | null>(null);
   const extensions = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     return snapshot.extensions.filter((extension) => {
@@ -64,9 +68,27 @@ export function ExtensionsPage({
   }, [filter, query, snapshot.extensions]);
   const trust = async () => {
     if (!reviewing || !confirmed) return;
-    await actions.trustExtension(reviewing.id, reviewing.digest);
-    setReviewing(null);
-    setConfirmed(false);
+    if (await actions.trustExtension(reviewing.id, reviewing.digest)) {
+      setReviewing(null);
+      setConfirmed(false);
+    }
+  };
+  const runContainedScript = async (extension: ExtensionManifest) => {
+    const accepted = await actions.runLegacyExtension(
+      extension.id,
+      extension.digest,
+    );
+    setRunFeedback(
+      accepted
+        ? {
+            tone: "success",
+            message: `${extension.name}: the contained-run request was accepted. Watch the run state and Diagnostics for execution results.`,
+          }
+        : {
+            tone: "warning",
+            message: `${extension.name}: the contained-run request was rejected. Review the error above; no script was started.`,
+          },
+    );
   };
   return (
     <div className="page">
@@ -79,7 +101,11 @@ export function ExtensionsPage({
             it can run.
           </p>
         </div>
-        <button className="button button-primary">
+        <button
+          className="button button-primary"
+          disabled
+          title="Importing third-party extensions is not available in this build."
+        >
           <Puzzle size={16} /> Import extension
         </button>
       </section>
@@ -92,10 +118,41 @@ export function ExtensionsPage({
             apply. Only enable scripts you understand.
           </span>
         </div>
-        <button className="button button-secondary">
+        <button
+          className="button button-secondary"
+          disabled
+          title="Compatibility limits are fixed by the contained runner in this build."
+        >
           Compatibility settings
         </button>
       </div>
+      <div className="inline-note" role="note">
+        <AlertTriangle size={17} />
+        <span>
+          Importing third-party extensions and changing compatibility limits are
+          not available yet. Only the bundled, hash-pinned catalog can run.
+        </span>
+      </div>
+      {runFeedback && (
+        <div
+          className={`inline-alert inline-alert-${runFeedback.tone === "success" ? "success" : "warning"}`}
+          role="status"
+        >
+          {runFeedback.tone === "success" ? (
+            <Check size={18} />
+          ) : (
+            <AlertTriangle size={18} />
+          )}
+          <div>
+            <strong>
+              {runFeedback.tone === "success"
+                ? "Run request accepted"
+                : "Run request rejected"}
+            </strong>
+            <span>{runFeedback.message}</span>
+          </div>
+        </div>
+      )}
       <section
         className="extension-toolbar"
         aria-label="Extension catalog filters"
@@ -177,7 +234,11 @@ export function ExtensionsPage({
                     Review & trust <ChevronRight size={15} />
                   </button>
                 ) : extension.trust === "blocked" ? (
-                  <button className="button button-secondary button-small">
+                  <button
+                    className="button button-secondary button-small"
+                    disabled
+                    title="Changed or unavailable assets cannot be inspected or run from this build."
+                  >
                     Inspect change
                   </button>
                 ) : extension.executionMode === "native_preview" ? (
@@ -200,12 +261,7 @@ export function ExtensionsPage({
                     <button
                       className="button button-secondary button-small"
                       disabled={pendingAction !== null}
-                      onClick={() =>
-                        void actions.runLegacyExtension(
-                          extension.id,
-                          extension.digest,
-                        )
-                      }
+                      onClick={() => void runContainedScript(extension)}
                     >
                       <Play size={14} /> Run contained script
                     </button>

@@ -20,7 +20,7 @@ function createActions(saveResult = true) {
       savedSettings = settings;
       return saveResult;
     },
-    completeOnboarding: vi.fn().mockResolvedValue(undefined),
+    completeOnboarding: vi.fn().mockResolvedValue(true),
     trustExtension: vi.fn().mockResolvedValue(true),
     runLegacyExtension: vi.fn().mockResolvedValue(undefined),
     startLegacySession: vi.fn().mockResolvedValue(undefined),

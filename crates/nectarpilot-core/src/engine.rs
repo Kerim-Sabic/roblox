@@ -770,6 +770,11 @@ impl<B: AutomationBackend> AutomationEngine<B> {
             };
             if let Err(error) = preflight {
                 let cancelled = matches!(error, AutomationError::Cancelled);
+                let reason = if cancelled {
+                    "legacy session preflight cancelled".to_owned()
+                } else {
+                    format!("legacy session preflight rejected: {error}")
+                };
                 self.emit(DaemonEvent::ActionCompleted(action_result(
                     &format!("session_preflight:{}", step.script_id),
                     if cancelled {
@@ -780,29 +785,39 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                     started_at,
                     error.to_string(),
                 )));
-                let _ = port.cancel().await;
-                let _ = self.inner.backend.release_all_inputs().await;
+                // A preflight rejection means no compatibility child was
+                // launched.  Focus/trust/configuration can be corrected and
+                // retried immediately; it must not strand the whole daemon
+                // in Faulted.  Cleanup failures are different: retaining an
+                // input or child could be unsafe, so they remain a fault.
+                let mut cleanup_errors = Vec::new();
+                if let Err(error) = port.cancel().await {
+                    cleanup_errors.push(error.to_string());
+                }
+                if let Err(error) = self.inner.backend.release_all_inputs().await {
+                    cleanup_errors.push(error.to_string());
+                }
+                let (final_state, final_reason) = if cleanup_errors.is_empty() {
+                    (RunState::Idle, reason)
+                } else {
+                    (
+                        RunState::Faulted,
+                        format!(
+                            "{reason}; preflight cleanup failed: {}",
+                            cleanup_errors.join("; ")
+                        ),
+                    )
+                };
                 self.record_run_outcome(
                     &profile,
                     "legacy_session",
                     started_at,
-                    if cancelled {
-                        RunState::Idle
-                    } else {
-                        RunState::Faulted
-                    },
-                    &format!("session preflight failed: {error}"),
+                    final_state,
+                    &final_reason,
                     0,
                     u32::from(!cancelled),
                 );
-                self.finish_worker(
-                    if cancelled {
-                        RunState::Idle
-                    } else {
-                        RunState::Faulted
-                    },
-                    "legacy session preflight ended",
-                );
+                self.finish_worker(final_state, &final_reason);
                 return;
             }
         }
@@ -1416,6 +1431,11 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         };
         if let Err(error) = preflight {
             let cancelled = matches!(error, AutomationError::Cancelled);
+            let reason = if cancelled {
+                "preflight cancelled".to_owned()
+            } else {
+                format!("preflight rejected: {error}")
+            };
             self.emit(DaemonEvent::ActionCompleted(action_result(
                 "preflight",
                 if cancelled {
@@ -1426,15 +1446,17 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 started_at,
                 error.to_string(),
             )));
-            let _ = self.inner.backend.release_all_inputs().await;
-            self.finish_worker(
-                if cancelled {
-                    RunState::Idle
-                } else {
-                    RunState::Faulted
-                },
-                "preflight ended",
-            );
+            // A rejected preflight has not sent automation input.  Keep the
+            // daemon retryable after a user fixes focus, Roblox readiness, or
+            // configuration.  Only a failed safety cleanup remains Faulted.
+            let (final_state, final_reason) = match self.inner.backend.release_all_inputs().await {
+                Ok(()) => (RunState::Idle, reason),
+                Err(cleanup_error) => (
+                    RunState::Faulted,
+                    format!("{reason}; preflight cleanup failed: {cleanup_error}"),
+                ),
+            };
+            self.finish_worker(final_state, &final_reason);
             return;
         }
 
@@ -1538,6 +1560,11 @@ impl<B: AutomationBackend> AutomationEngine<B> {
         };
         if let Err(error) = preflight {
             let cancelled = matches!(error, AutomationError::Cancelled);
+            let reason = if cancelled {
+                "legacy preflight cancelled".to_owned()
+            } else {
+                format!("legacy preflight rejected: {error}")
+            };
             self.emit(DaemonEvent::ActionCompleted(action_result(
                 &format!("legacy_preflight:{script_id}"),
                 if cancelled {
@@ -1548,16 +1575,25 @@ impl<B: AutomationBackend> AutomationEngine<B> {
                 started_at,
                 error.to_string(),
             )));
-            let _ = port.cancel().await;
-            let _ = self.inner.backend.release_all_inputs().await;
-            self.finish_worker(
-                if cancelled {
-                    RunState::Idle
-                } else {
-                    RunState::Faulted
-                },
-                "legacy preflight ended",
-            );
+            let mut cleanup_errors = Vec::new();
+            if let Err(error) = port.cancel().await {
+                cleanup_errors.push(error.to_string());
+            }
+            if let Err(error) = self.inner.backend.release_all_inputs().await {
+                cleanup_errors.push(error.to_string());
+            }
+            let (final_state, final_reason) = if cleanup_errors.is_empty() {
+                (RunState::Idle, reason)
+            } else {
+                (
+                    RunState::Faulted,
+                    format!(
+                        "{reason}; legacy preflight cleanup failed: {}",
+                        cleanup_errors.join("; ")
+                    ),
+                )
+            };
+            self.finish_worker(final_state, &final_reason);
             return;
         }
 
@@ -1918,6 +1954,13 @@ mod tests {
         cancels: AtomicUsize,
     }
 
+    /// Simulates the normal, user-correctable condition reported by the
+    /// Windows legacy bridge when Roblox loses foreground between the click
+    /// and worker preflight.
+    struct FocusRejectedLegacyPort {
+        preflights: AtomicUsize,
+    }
+
     struct SessionLegacyPort {
         calls: TestMutex<Vec<String>>,
         fail_route_once: AtomicBool,
@@ -1987,6 +2030,40 @@ mod tests {
 
         async fn cancel(&self) -> Result<(), AutomationError> {
             self.cancels.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl LegacyExecutionPort for FocusRejectedLegacyPort {
+        async fn preflight(
+            &self,
+            _profile: &Profile,
+            _script_id: &str,
+            _approved_sha256: &str,
+        ) -> Result<(), AutomationError> {
+            self.preflights.fetch_add(1, Ordering::SeqCst);
+            Err(AutomationError::Preflight(
+                "the verified Roblox client must be foreground and restored".into(),
+            ))
+        }
+
+        async fn execute(
+            &self,
+            _profile: &Profile,
+            script_id: &str,
+            _approved_sha256: &str,
+            _context: TaskContext,
+        ) -> ActionResult {
+            super::action_result(
+                &format!("legacy:{script_id}"),
+                ActionOutcome::Failed,
+                Utc::now(),
+                "fixture must not execute after focus preflight rejection",
+            )
+        }
+
+        async fn cancel(&self) -> Result<(), AutomationError> {
             Ok(())
         }
     }
@@ -2248,6 +2325,45 @@ mod tests {
                 "builtin:reset-convert".to_owned(),
             ],
             "gathering must not continue when the cooldown timestamp cannot persist"
+        );
+    }
+
+    #[tokio::test]
+    async fn focus_preflight_rejection_returns_idle_and_allows_retry() {
+        let directory = tempdir().expect("temp directory");
+        let store =
+            Arc::new(SqliteStore::open(directory.path().join("db.sqlite3")).expect("store"));
+        let profile = session_profile(60, false);
+        store.save_profile(&profile).expect("profile");
+        let backend = Arc::new(MockBackend::default());
+        let engine = AutomationEngine::new(Arc::clone(&backend), store).expect("engine");
+        let legacy = Arc::new(FocusRejectedLegacyPort {
+            preflights: AtomicUsize::new(0),
+        });
+        engine.install_legacy_port(Arc::clone(&legacy) as Arc<dyn LegacyExecutionPort>);
+
+        // A missed foreground handoff is not a daemon crash or an input
+        // failure. Both attempts must run their normal preflight, return to
+        // Idle, and leave the user free to focus Roblox and press Start again.
+        for _ in 0..2 {
+            engine
+                .handle_command(CommandEnvelope::new(
+                    profile.id,
+                    Command::StartLegacySession {
+                        max_cycles: 1,
+                        max_minutes: 5,
+                    },
+                ))
+                .await
+                .expect("focus-rejected session command is accepted for preflight");
+            wait_for_state(&engine, RunState::Idle).await;
+            assert!(engine.snapshot().active_task.is_none());
+        }
+
+        assert_eq!(legacy.preflights.load(Ordering::SeqCst), 2);
+        assert!(
+            backend.release_count() >= 2,
+            "every rejected preflight must still release input state"
         );
     }
 

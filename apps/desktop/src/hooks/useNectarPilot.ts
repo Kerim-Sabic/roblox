@@ -17,9 +17,11 @@ export interface NectarActions {
   selectProfile(profileId: string): Promise<void>;
   /** Returns false when the daemon rejected the document; callers must keep drafts dirty. */
   saveSettings(settings: AutomationSettings): Promise<boolean>;
-  completeOnboarding(): Promise<void>;
+  /** Returns false when setup could not be persisted; callers must remain open. */
+  completeOnboarding(): Promise<boolean>;
   trustExtension(extensionId: string, digest: string): Promise<boolean>;
-  runLegacyExtension(extensionId: string, digest: string): Promise<void>;
+  /** Returns true only after the daemon accepted the contained-run request. */
+  runLegacyExtension(extensionId: string, digest: string): Promise<boolean>;
   startLegacySession(maxCycles: number, maxMinutes: number): Promise<void>;
   inspectLegacy(scriptId: string): Promise<void>;
   scanQuests(): Promise<void>;
@@ -189,20 +191,16 @@ export function useNectarPilot(
         run("save-settings", (profileId) =>
           service.saveSettings(profileId, settings),
         ),
-      completeOnboarding: async () => {
-        await run("onboarding", (profileId) =>
-          service.completeOnboarding(profileId),
-        );
-      },
+      completeOnboarding: () =>
+        run("onboarding", (profileId) => service.completeOnboarding(profileId)),
       trustExtension: (extensionId, digest) =>
         run("trust-extension", (profileId) =>
           service.trustExtension(profileId, extensionId, digest),
         ),
-      runLegacyExtension: async (extensionId, digest) => {
-        await run("run-legacy-extension", (profileId) =>
+      runLegacyExtension: (extensionId, digest) =>
+        run("run-legacy-extension", (profileId) =>
           service.runLegacyExtension(profileId, extensionId, digest),
-        );
-      },
+        ),
       startLegacySession: async (maxCycles, maxMinutes) => {
         await run("start-legacy-session", (profileId) =>
           service.startLegacySession(profileId, maxCycles, maxMinutes),

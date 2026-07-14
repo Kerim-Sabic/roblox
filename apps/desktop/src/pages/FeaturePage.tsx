@@ -115,9 +115,16 @@ export function FeaturePage({
               <p>{feature.description}</p>
               <footer>
                 <span className={isEnabled ? "feature-status-on" : ""}>
-                  <Clock3 size={14} /> {isEnabled ? feature.status : "Disabled"}
+                  <Clock3 size={14} />{" "}
+                  {isEnabled
+                    ? "Saved preference — scheduler unavailable"
+                    : "Disabled"}
                 </span>
-                <button aria-label={`Configure ${feature.title}`}>
+                <button
+                  aria-label={`Configure ${feature.title} unavailable`}
+                  disabled
+                  title="Per-task configuration is not available until the native category scheduler is connected."
+                >
                   <ArrowRight size={16} />
                 </button>
               </footer>
@@ -129,8 +136,10 @@ export function FeaturePage({
       <div className="inline-note">
         <Info size={17} />
         <span>
-          Changes apply to <strong>{profile.name}</strong>. Active tasks finish
-          their current safe step before updated scheduling takes effect.
+          Changes save to <strong>{profile.name}</strong>, but native activity,
+          boost, quest, and planter scheduling is not connected in this build.
+          Use the supported Gather flow or a reviewed contained script under
+          Extensions for executable automation.
         </span>
       </div>
     </div>
