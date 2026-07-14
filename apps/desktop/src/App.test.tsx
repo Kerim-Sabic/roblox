@@ -2,10 +2,27 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
-import { MockNectarService } from "./services/nectar-service";
+import {
+  MockNectarService,
+  type SnapshotErrorListener,
+  type SnapshotListener,
+} from "./services/nectar-service";
 
 function renderDesktop() {
   return render(<App service={new MockNectarService()} />);
+}
+
+class BackgroundRefreshFailureService extends MockNectarService {
+  override subscribe(
+    listener: SnapshotListener,
+    onError?: SnapshotErrorListener,
+  ): () => void {
+    const dispose = super.subscribe(listener);
+    queueMicrotask(() =>
+      onError?.(new Error("daemon connection was interrupted")),
+    );
+    return dispose;
+  }
 }
 
 describe("NectarPilot desktop", () => {
@@ -37,6 +54,16 @@ describe("NectarPilot desktop", () => {
     }
     expect(
       screen.getByText("Wrong-window input is blocked"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a background daemon refresh error instead of silently keeping stale status", async () => {
+    render(<App service={new BackgroundRefreshFailureService()} />);
+
+    expect(
+      await screen.findByText(
+        "Live status refresh failed: daemon connection was interrupted",
+      ),
     ).toBeInTheDocument();
   });
 

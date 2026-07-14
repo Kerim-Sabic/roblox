@@ -215,10 +215,9 @@ fn capture_client_area(
 ) -> Result<RgbaImage, CaptureError> {
     use std::ffi::c_void;
     use std::mem::size_of;
-
     use windows::Win32::Foundation::HWND;
     use windows::Win32::Graphics::Gdi::{
-        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BitBlt, DIB_RGB_COLORS, GetDIBits, ROP_CODE, SRCCOPY,
+        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BitBlt, GdiFlush, ROP_CODE, SRCCOPY,
     };
 
     let width_i32 = i32::try_from(width)
@@ -233,7 +232,25 @@ fn capture_client_area(
     let window = HWND(window_bits as *mut c_void);
     let source = OwnedClientDc::new(window)?;
     let memory = OwnedMemoryDc::new(source.0)?;
-    let bitmap = OwnedBitmap::new(source.0, width_i32, height_i32)?;
+    let mut info = BITMAPINFO {
+        bmiHeader: BITMAPINFOHEADER {
+            biSize: u32::try_from(size_of::<BITMAPINFOHEADER>()).unwrap_or(u32::MAX),
+            biWidth: width_i32,
+            // A negative height requests a top-down DIB, matching image crate's
+            // raster ordering without a post-capture vertical flip.
+            biHeight: -height_i32,
+            biPlanes: 1,
+            biBitCount: 32,
+            biCompression: BI_RGB.0,
+            ..BITMAPINFOHEADER::default()
+        },
+        ..BITMAPINFO::default()
+    };
+    let (bitmap, bits) = OwnedBitmap::new_dib(source.0, &mut info)?;
+    let pixels = usize::try_from(u64::from(width) * u64::from(height))
+        .map_err(|_| CaptureError::FrameTooLarge)?;
+    let byte_len = pixels.checked_mul(4).ok_or(CaptureError::FrameTooLarge)?;
+    let mut rgba = vec![0_u8; byte_len];
     {
         let _selection = SelectedBitmap::new(memory.0, bitmap.0)?;
         // SAFETY: both DCs are valid, the selected bitmap has the exact bounded
@@ -252,51 +269,24 @@ fn capture_client_area(
             )
         }
         .map_err(|error| CaptureError::Backend(error.to_string()))?;
-    }
-
-    let pixels = usize::try_from(u64::from(width) * u64::from(height))
-        .map_err(|_| CaptureError::FrameTooLarge)?;
-    let byte_len = pixels.checked_mul(4).ok_or(CaptureError::FrameTooLarge)?;
-    let mut bgra = vec![0_u8; byte_len];
-    let mut info = BITMAPINFO {
-        bmiHeader: BITMAPINFOHEADER {
-            biSize: u32::try_from(size_of::<BITMAPINFOHEADER>()).unwrap_or(u32::MAX),
-            biWidth: width_i32,
-            // A negative height requests a top-down DIB, matching image crate's
-            // raster ordering without a post-capture vertical flip.
-            biHeight: -height_i32,
-            biPlanes: 1,
-            biBitCount: 32,
-            biCompression: BI_RGB.0,
-            ..BITMAPINFOHEADER::default()
-        },
-        ..BITMAPINFO::default()
-    };
-    // SAFETY: bitmap is no longer selected into a DC; the output vector has the
-    // exact checked size for a 32-bit top-down DIB and info is writable.
-    let copied = unsafe {
-        GetDIBits(
-            source.0,
-            bitmap.0,
-            0,
-            height,
-            Some(bgra.as_mut_ptr().cast::<c_void>()),
-            &raw mut info,
-            DIB_RGB_COLORS,
-        )
-    };
-    if copied != height_i32 {
-        return Err(CaptureError::Backend(
-            "GetDIBits did not return the full client frame".to_owned(),
-        ));
-    }
-
-    let mut rgba = vec![0_u8; byte_len];
-    for (source, destination) in bgra.chunks_exact(4).zip(rgba.chunks_exact_mut(4)) {
-        destination[0] = source[2];
-        destination[1] = source[1];
-        destination[2] = source[0];
-        destination[3] = 255;
+        // CreateDIBSection exposes memory owned by the bitmap. GDI can still
+        // have an asynchronous write in flight after BitBlt, so synchronize
+        // before touching that memory (the Win32 API explicitly requires it).
+        if !unsafe { GdiFlush() }.as_bool() {
+            return Err(CaptureError::Backend(
+                windows::core::Error::from_win32().to_string(),
+            ));
+        }
+        // SAFETY: `bits` was returned by CreateDIBSection for a 32-bit DIB with
+        // these exact checked dimensions. The bitmap remains alive throughout
+        // this scope, and each BGRA pixel is copied into Rust-owned memory.
+        let bgra = unsafe { std::slice::from_raw_parts(bits.cast_const(), byte_len) };
+        for (source, destination) in bgra.chunks_exact(4).zip(rgba.chunks_exact_mut(4)) {
+            destination[0] = source[2];
+            destination[1] = source[1];
+            destination[2] = source[0];
+            destination[3] = 255;
+        }
     }
     RgbaImage::from_raw(width, height, rgba).ok_or_else(|| {
         CaptureError::Backend("captured buffer did not match the expected RGBA layout".to_owned())
@@ -365,21 +355,45 @@ struct OwnedBitmap(windows::Win32::Graphics::Gdi::HBITMAP);
 
 #[cfg(windows)]
 impl OwnedBitmap {
-    fn new(
+    fn new_dib(
         source: windows::Win32::Graphics::Gdi::HDC,
-        width: i32,
-        height: i32,
-    ) -> Result<Self, CaptureError> {
-        // SAFETY: source is valid and dimensions have already been bounded and
-        // converted to positive i32 values.
-        let bitmap =
-            unsafe { windows::Win32::Graphics::Gdi::CreateCompatibleBitmap(source, width, height) };
+        info: &mut windows::Win32::Graphics::Gdi::BITMAPINFO,
+    ) -> Result<(Self, *mut u8), CaptureError> {
+        use std::ffi::c_void;
+        use std::ptr;
+
+        let mut bits: *mut c_void = ptr::null_mut();
+        // SAFETY: source is valid, `info` describes a bounded 32-bit DIB, and
+        // `bits` is a writable out-pointer. The returned allocation is owned by
+        // the HBITMAP and stays valid until OwnedBitmap drops it.
+        let bitmap = unsafe {
+            windows::Win32::Graphics::Gdi::CreateDIBSection(
+                Some(source),
+                info,
+                windows::Win32::Graphics::Gdi::DIB_RGB_COLORS,
+                &raw mut bits,
+                None,
+                0,
+            )
+        }
+        .map_err(|error| CaptureError::Backend(error.to_string()))?;
         if bitmap.is_invalid() {
             Err(CaptureError::Backend(
                 windows::core::Error::from_win32().to_string(),
             ))
+        } else if bits.is_null() {
+            // A successful DIB section must provide writable bits. Delete the
+            // bitmap immediately so a malformed native result cannot leak.
+            let _ = unsafe {
+                windows::Win32::Graphics::Gdi::DeleteObject(
+                    windows::Win32::Graphics::Gdi::HGDIOBJ::from(bitmap),
+                )
+            };
+            Err(CaptureError::Backend(
+                "CreateDIBSection returned a bitmap without writable pixels".to_owned(),
+            ))
         } else {
-            Ok(Self(bitmap))
+            Ok((Self(bitmap), bits.cast::<u8>()))
         }
     }
 }
@@ -493,5 +507,50 @@ mod tests {
         let width = u32::try_from(MAX_CAPTURE_PIXELS + 1).unwrap();
         let error = validate_dimensions(width, 1).unwrap_err();
         assert!(matches!(error, CaptureError::FrameTooLarge));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn dib_sections_expose_bounded_writable_bgra_memory() {
+        use std::mem::size_of;
+
+        use windows::Win32::Graphics::Gdi::{
+            BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleDC, DeleteDC,
+        };
+
+        use super::OwnedBitmap;
+
+        // SAFETY: a memory DC has no external window ownership and is released
+        // exactly once before the test returns.
+        let dc = unsafe { CreateCompatibleDC(None) };
+        assert!(!dc.is_invalid());
+        let mut info = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: u32::try_from(size_of::<BITMAPINFOHEADER>()).unwrap(),
+                biWidth: 2,
+                biHeight: -1,
+                biPlanes: 1,
+                biBitCount: 32,
+                biCompression: BI_RGB.0,
+                ..BITMAPINFOHEADER::default()
+            },
+            ..BITMAPINFO::default()
+        };
+        let (bitmap, bits) = OwnedBitmap::new_dib(dc, &mut info).unwrap();
+        // SAFETY: the 2x1, 32-bit DIB owns exactly eight writable bytes while
+        // `bitmap` remains in scope.
+        unsafe {
+            *bits.add(0) = 0x03;
+            *bits.add(1) = 0x02;
+            *bits.add(2) = 0x01;
+            *bits.add(3) = 0xFF;
+            assert_eq!(
+                std::slice::from_raw_parts(bits, 4),
+                [0x03, 0x02, 0x01, 0xFF]
+            );
+        }
+        drop(bitmap);
+        // SAFETY: this balances CreateCompatibleDC above.
+        let _ = unsafe { DeleteDC(dc) };
     }
 }

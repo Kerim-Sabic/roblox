@@ -12,10 +12,14 @@ import {
 import { createMockSnapshot } from "./seed";
 
 export type SnapshotListener = (snapshot: DashboardSnapshot) => void;
+export type SnapshotErrorListener = (cause: unknown) => void;
 
 export interface NectarService {
   getSnapshot(): Promise<DashboardSnapshot>;
-  subscribe(listener: SnapshotListener): () => void;
+  subscribe(
+    listener: SnapshotListener,
+    onError?: SnapshotErrorListener,
+  ): () => void;
   start(profileId: string): Promise<void>;
   acknowledgeAttention(profileId: string): Promise<void>;
   pause(profileId: string): Promise<void>;
@@ -65,18 +69,37 @@ export class TauriNectarService implements NectarService {
     return snapshot;
   }
 
-  subscribe(listener: SnapshotListener): () => void {
+  subscribe(
+    listener: SnapshotListener,
+    onError?: SnapshotErrorListener,
+  ): () => void {
     let cancelled = false;
     let unlisten: UnlistenFn | undefined;
-    void listen<DaemonEventEnvelope>("nectarpilot:event", () => {
+    void listen<DaemonEventEnvelope>("nectarpilot:event", (event) => {
       if (cancelled) return;
-      void this.getSnapshot().then((snapshot) => {
-        if (!cancelled) listener(snapshot);
+      // The daemon's two-second snapshot heartbeat is the live dashboard
+      // clock, so it must still refresh the WebView. Each heartbeat is followed
+      // by a `command_accepted` acknowledgement for the internal request;
+      // that second event has no new state and would only duplicate the same
+      // projection.
+      if (event.payload.event.type === "command_accepted") {
+        return;
+      }
+      void this.getSnapshot()
+        .then((snapshot) => {
+          if (!cancelled) listener(snapshot);
+        })
+        .catch((cause: unknown) => {
+          if (!cancelled) onError?.(cause);
+        });
+    })
+      .then((dispose) => {
+        if (cancelled) dispose();
+        else unlisten = dispose;
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) onError?.(cause);
       });
-    }).then((dispose) => {
-      if (cancelled) dispose();
-      else unlisten = dispose;
-    });
     return () => {
       cancelled = true;
       unlisten?.();
