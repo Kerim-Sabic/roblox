@@ -1,9 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { NectarActions } from "../hooks/useNectarPilot";
 import { createMockSnapshot } from "../services/seed";
-import type { AutomationSettings } from "../types/contracts";
+import type {
+  AutomationSettings,
+  ExtensionManifest,
+} from "../types/contracts";
 import { GatherPage } from "./GatherPage";
 
 function createActions(saveResult = true) {
@@ -29,6 +32,21 @@ function createActions(saveResult = true) {
     setCompactMode: vi.fn().mockResolvedValue(undefined),
   };
   return { pageActions, savedSettings: () => savedSettings };
+}
+
+function trustedLegacyAsset(id: string): ExtensionManifest {
+  return {
+    id,
+    name: id,
+    author: "Natro Team contributors",
+    version: "1.1.2",
+    description: "Pinned compatibility asset",
+    digest: "a".repeat(64),
+    trust: "trusted",
+    permissions: ["Keyboard input", "Mouse input"],
+    enabled: true,
+    executionMode: "legacy_bridge",
+  };
 }
 
 describe("GatherPage", () => {
@@ -124,5 +142,82 @@ describe("GatherPage", () => {
     await user.click(screen.getByRole("button", { name: "Apply plan" }));
 
     expect(actionState.savedSettings()?.gathering.pattern).toBe("e_lol");
+  });
+
+  it("hydrates a placeholder Gather draft when the daemon profile arrives", async () => {
+    const placeholder = createMockSnapshot();
+    placeholder.profiles[0]!.settings.gathering = {
+      ...placeholder.profiles[0]!.settings.gathering,
+      enabled: false,
+      fields: [],
+    };
+    const hydrated = createMockSnapshot();
+    const actionState = createActions();
+    const { rerender } = render(
+      <GatherPage
+        snapshot={placeholder}
+        actions={actionState.pageActions}
+        pendingAction={null}
+      />,
+    );
+
+    expect(screen.getByText("Add your first field")).toBeVisible();
+
+    // Startup can project a temporary profile with the final profile ID before
+    // its document is delivered on the pipe.  The page must replace that
+    // clean placeholder rather than leaving a real saved plan empty.
+    rerender(
+      <GatherPage
+        snapshot={hydrated}
+        actions={actionState.pageActions}
+        pendingAction={null}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Remove Pine Tree Forest" }),
+      ).toBeVisible(),
+    );
+    expect(screen.queryByText("Add your first field")).not.toBeInTheDocument();
+  });
+
+  it("accepts Natro field aliases without falsely blocking a saved plan", async () => {
+    const user = userEvent.setup();
+    const snapshot = createMockSnapshot();
+    snapshot.profiles[0]!.settings.gathering = {
+      ...snapshot.profiles[0]!.settings.gathering,
+      enabled: true,
+      fields: ["Sunflower", "Pine Tree"],
+      pattern: "e_lol",
+    };
+    snapshot.extensions = [
+      trustedLegacyAsset("legacy:route:paths/gtf-sunflower.ahk"),
+      trustedLegacyAsset("legacy:route:paths/gtf-pinetree.ahk"),
+      trustedLegacyAsset("legacy:pattern:patterns/e_lol.ahk"),
+    ];
+    const actionState = createActions();
+
+    render(
+      <GatherPage
+        snapshot={snapshot}
+        actions={actionState.pageActions}
+        pendingAction={null}
+      />,
+    );
+
+    expect(screen.queryByText("Selected assets are unavailable")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Start saved plan" }),
+    ).toBeEnabled();
+
+    // "Sunflower" and "Sunflower Field" are the same pinned legacy route;
+    // do not let a user add it twice merely because it was imported under the
+    // older short name.
+    await user.selectOptions(
+      screen.getByLabelText("Field to add"),
+      "Sunflower Field",
+    );
+    expect(screen.getByRole("button", { name: /Add field/ })).toBeDisabled();
   });
 });
