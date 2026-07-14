@@ -764,7 +764,7 @@ export function SettingsPage({
             <SettingsSectionCard
               icon={<Keyboard size={20} />}
               title="Global hotkeys"
-              description="Emergency stop is always registered while NectarPilot is open."
+              description="NectarPilot attempts to register the emergency stop while it is open. Editing hotkeys is not available in this build."
             >
               {(
                 Object.entries(draft.hotkeys) as Array<
@@ -783,6 +783,8 @@ export function SettingsPage({
                   <button
                     className="hotkey-recorder"
                     aria-label={`Change ${command} hotkey`}
+                    disabled
+                    title="Hotkey editing is not available in this build."
                   >
                     <kbd>{value}</kbd>
                     <span>Change</span>
